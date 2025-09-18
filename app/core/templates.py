@@ -1,7 +1,17 @@
 # app/core/templates.py
 from fastapi.templating import Jinja2Templates
+from app.core.config import settings
 
 templates = Jinja2Templates(directory="app/templates")
+
+def get_template_context(request, **context):
+    """Get template context with theming variables included."""
+    base_context = {
+        "request": request,
+        **settings.theme_context,
+        **context
+    }
+    return base_context
 
 def format_datetime(dt, format_str="%B %d, %Y at %I:%M %p"):
     if dt:

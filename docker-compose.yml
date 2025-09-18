@@ -10,13 +10,13 @@ services:
       - "8000:8000"
     volumes:
       # Persist database and logs
-      - ./data:/app/data
+      - ./:/app
       - ./logs:/app/logs
       # Configuration override
       - ./.env:/app/.env:ro
     environment:
       # Core settings
-      - DATABASE_URL=sqlite:///./data/jannah_sms.db
+      - DATABASE_URL=sqlite:///./jannah_sms.db
       - DEBUG=false
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
       
@@ -75,13 +75,13 @@ services:
     image: alpine:latest
     container_name: jannah-sms-backup
     volumes:
-      - ./data:/app/data:ro
+      - ./:/app:ro
       - ./backups:/app/backups
     command: >
       sh -c "
         while true; do
           echo 'Creating database backup...'
-          cp /app/data/jannah_sms.db /app/backups/jannah_sms_$(date +%Y%m%d_%H%M%S).db
+          cp /app/jannah_sms.db /app/backups/jannah_sms_$(date +%Y%m%d_%H%M%S).db
           find /app/backups -name '*.db' -mtime +7 -delete
           echo 'Backup completed. Sleeping for 24 hours...'
           sleep 86400

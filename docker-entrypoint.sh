@@ -28,7 +28,7 @@ chmod 755 /app/data
 chmod 755 /app/logs
 
 # Initialize database if it doesn't exist
-if [ ! -f "/app/data/jannah_sms.db" ]; then
+if [ ! -f "/app/jannah_sms.db" ]; then
     echo -e "${GREEN}🗄️  Initializing database...${NC}"
     python -c "
 from app.core.database import init_db
@@ -80,7 +80,7 @@ echo -e "${GREEN}📋 Configuration Summary:${NC}"
 echo -e "  ${BLUE}App Name:${NC} ${APP_NAME:-Jannah SMS Admin}"
 echo -e "  ${BLUE}Company:${NC} ${COMPANY_NAME:-Jannah Property Management}"
 echo -e "  ${BLUE}Debug Mode:${NC} ${DEBUG:-false}"
-echo -e "  ${BLUE}Database:${NC} ${DATABASE_URL:-sqlite:///./data/jannah_sms.db}"
+echo -e "  ${BLUE}Database:${NC} ${DATABASE_URL:-sqlite:///./jannah_sms.db}"
 echo -e "  ${BLUE}SMS API:${NC} ${SMS_API_KEY:+Configured}${SMS_API_KEY:-Not configured}"
 
 # Create admin user if it doesn't exist

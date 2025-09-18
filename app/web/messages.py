@@ -14,7 +14,7 @@ from app.models.tenant import Tenant
 from app.models.message import Message, MessageStatus, MessageReply
 from app.models.schedule import Schedule, ScheduleStatus
 from app.services.sms_service import sms_service
-from app.core.templates import templates
+from app.core.templates import templates, get_template_context
 
 
 logger = logging.getLogger(__name__)

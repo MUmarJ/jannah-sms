@@ -11,14 +11,23 @@ import secrets
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
 
-    # Application
+    # Application Theming
     app_name: str = Field("Jannah SMS Admin", env="APP_NAME")
     company_name: str = Field("Jannah Property Management", env="COMPANY_NAME")
+    app_version: str = Field("v2.0", env="APP_VERSION")
+    app_tagline: str = Field(
+        "Modern SMS scheduling system for property management", env="APP_TAGLINE"
+    )
+    app_icon: str = Field("📱", env="APP_ICON")
+    primary_color: str = Field("#3b82f6", env="PRIMARY_COLOR")
+    secondary_color: str = Field("#6b7280", env="SECONDARY_COLOR")
+
+    # Application
     debug: bool = Field(False, env="DEBUG")
     secret_key: str = Field(secrets.token_urlsafe(32), env="SECRET_KEY")
 
     # Database
-    database_url: str = Field("sqlite:///./data/jannah_sms.db", env="DATABASE_URL")
+    database_url: str = Field("sqlite:///./jannah_sms.db", env="DATABASE_URL")
 
     # SMS API Settings
     sms_api_key: str = Field("", env="SMS_API_KEY")
@@ -83,6 +92,20 @@ class Settings(BaseSettings):
                 self.microsoft_tenant_id,
             ]
         )
+
+    @property
+    def theme_context(self) -> dict:
+        """Get theming context for templates."""
+        return {
+            "app_name": self.app_name,
+            "company_name": self.company_name,
+            "app_version": self.app_version,
+            "app_tagline": self.app_tagline,
+            "app_icon": self.app_icon,
+            "primary_color": self.primary_color,
+            "secondary_color": self.secondary_color,
+            "powered_by": f"Powered by {self.app_name} {self.app_version}",
+        }
 
 
 # Global settings instance
