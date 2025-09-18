@@ -8,15 +8,15 @@ A modern, elderly-friendly SMS management system for property management with au
 
 ![Dashboard](./Dashboard.png)
 
-##  Features
+## Features
 
 ### Core Functionality
-- **📱 SMS Management** - Send individual or bulk SMS messages via TextBelt API
-- **⏰ Automated Scheduling** - Create recurring schedules with advanced conditional logic
-- **👥 Tenant Management** - Comprehensive tenant database with payment tracking
-- **📊 Dashboard** - Real-time overview with statistics and recent activity
-- **💰 Payment Tracking** - Track rent payments, late fees, and payment history
-- **📋 Message Templates** - Pre-built templates for common messages
+- **SMS Management** - Send individual or bulk SMS messages via TextBelt API
+- **Automated Scheduling** - Create recurring schedules with advanced conditional logic
+- **Tenant Management** - Comprehensive tenant database with payment tracking
+- **Dashboard** - Real-time overview with statistics and recent activity
+- **Payment Tracking** - Track rent payments, late fees, and payment history
+- **Message Templates** - Pre-built templates for common messages
 
 ### Conditional Logic Engine
 - Send messages based on payment status (`isPaid`, `isOverdue`)
@@ -38,7 +38,7 @@ A modern, elderly-friendly SMS management system for property management with au
 - Rate limiting and CORS protection
 - Docker containerization for easy deployment
 
-##  Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -120,7 +120,7 @@ The main dashboard provides:
 3. **Templates**: Use built-in templates or create custom messages
 4. **Monitoring**: View execution history and success rates
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 jannah-sms-fastapi/
@@ -149,7 +149,7 @@ jannah-sms-fastapi/
 - **SQLite** - Lightweight database (easily upgradeable to PostgreSQL)
 - **Docker** - Containerization for consistent deployments
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -180,7 +180,7 @@ Target tenants based on:
 - Unit number ranges
 - Custom combinations with AND/OR logic
 
-## 🔒 Security
+## Security
 
 ### Authentication
 - JWT tokens for API access
@@ -201,7 +201,7 @@ Target tenants based on:
 - Regular database backups
 - Monitor SMS quota usage
 
-## 📊 API Documentation
+## API Documentation
 
 Interactive API documentation is available at:
 - Swagger UI: `http://localhost:8000/api/docs`
@@ -214,7 +214,7 @@ Interactive API documentation is available at:
 - `GET /api/v1/schedules` - List automated schedules
 - `POST /api/v1/schedules/{id}/run` - Execute schedule immediately
 
-## 🐳 Docker Production Deployment
+## Docker Production Deployment
 
 ### Single Container
 ```bash
@@ -240,7 +240,7 @@ docker-compose --profile production up -d
 docker-compose --profile production up -d
 ```
 
-## 🔧 Development
+## Development
 
 ### Running Tests
 ```bash
@@ -269,7 +269,7 @@ alembic revision --autogenerate -m "Description"
 alembic upgrade head
 ```
 
-## 📚 Migration from v1.0
+## Migration from v1.0
 
 The new FastAPI version includes:
 
@@ -292,7 +292,7 @@ The new FastAPI version includes:
 4. Import tenants via web interface
 5. Set up new automated schedules
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-feature`)
@@ -300,11 +300,11 @@ The new FastAPI version includes:
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## Support
 
 ### Common Issues
 
@@ -325,11 +325,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Getting Help
 
-- 📧 Email: support@jannah-sms.com
-- 🐛 Issues: [GitHub Issues](https://github.com/yourusername/jannah-sms/issues)
-- 📖 Documentation: [Full Documentation](https://docs.jannah-sms.com)
+- Issues: [GitHub Issues](https://github.com/yourusername/jannah-sms/issues)
+- Documentation: [Full Documentation](https://docs.jannah-sms.com)
 
-## 🎯 Roadmap
+## Roadmap
 
 ### v2.1 (Next Release)
 - [ ] Multi-tenant support
@@ -345,4 +344,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for property managers and their tenants**
+**Built with love for property managers and their tenants**
