@@ -1,4 +1,4 @@
-# Jannah SMS Admin v2.0
+# JannahSMS
 
 A modern, elderly-friendly SMS management system for property management with automated scheduling and conditional messaging.
 
@@ -6,7 +6,9 @@ A modern, elderly-friendly SMS management system for property management with au
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)
 
-## 🌟 Features
+![Dashboard](./Dashboard.png)
+
+##  Features
 
 ### Core Functionality
 - **📱 SMS Management** - Send individual or bulk SMS messages via TextBelt API
@@ -36,7 +38,7 @@ A modern, elderly-friendly SMS management system for property management with au
 - Rate limiting and CORS protection
 - Docker containerization for easy deployment
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 - Python 3.11+
@@ -90,7 +92,7 @@ A modern, elderly-friendly SMS management system for property management with au
    uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-## 📖 Usage Guide
+## Usage Guide
 
 ### Dashboard
 The main dashboard provides:
@@ -141,7 +143,7 @@ jannah-sms-fastapi/
 ### Key Components
 
 - **FastAPI** - Modern web framework with automatic API documentation
-- **SQLAlchemy** - Robust ORM for database operations  
+- **SQLAlchemy** - Robust ORM for database operations
 - **APScheduler** - Advanced task scheduling with cron-like capabilities
 - **Jinja2** - Template engine for server-side rendering
 - **SQLite** - Lightweight database (easily upgradeable to PostgreSQL)
@@ -164,7 +166,7 @@ jannah-sms-fastapi/
 
 Built-in templates include:
 - **Rent Reminder**: Monthly rent payment reminders
-- **Late Fee Notice**: Overdue payment notifications  
+- **Late Fee Notice**: Overdue payment notifications
 - **Payment Confirmation**: Payment received confirmations
 - **Maintenance Notice**: Scheduled maintenance alerts
 - **Custom**: Create your own templates
@@ -173,7 +175,7 @@ Built-in templates include:
 
 Target tenants based on:
 - Payment status (`is_current_month_rent_paid`)
-- Late fee status (`late_fee_applicable`) 
+- Late fee status (`late_fee_applicable`)
 - Last payment date
 - Unit number ranges
 - Custom combinations with AND/OR logic
@@ -251,7 +253,7 @@ pytest tests/ -v
 flake8 app/
 pylint app/
 
-# Type checking  
+# Type checking
 mypy app/
 
 # Security scan
@@ -311,7 +313,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Verify phone numbers are in correct format
 - Check SMS quota remaining
 
-**Can't login?**  
+**Can't login?**
 - Check admin credentials in .env file
 - Clear browser cookies
 - Restart application container
