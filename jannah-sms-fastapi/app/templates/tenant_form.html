@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if action == "add" %}Add Tenant{% else %}Edit Tenant{% endif %} - {{ app_name }}
+{% endblock %}
+
+{% block page_title %}
+    {% if action == "add" %}👤 Add New Tenant{% else %}✏️ Edit Tenant{% endif %}
+{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            {% if action == "add" %}
+                Add a new tenant to your property management system.
+            {% else %}
+                Update tenant information and contact details.
+            {% endif %}
+        </p>
+        <a href="/tenants" class="btn btn-secondary">← Back to Tenants</a>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="card">
+        <form method="post" 
+              action="{% if action == 'add' %}/tenants/add{% else %}/tenants/{{ tenant.id }}/edit{% endif %}"
+              data-validate>
+            
+            <!-- Basic Information -->
+            <div style="margin-bottom: 32px;">
+                <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                    📋 Basic Information
+                </h2>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Full Name *</label>
+                        <input type="text" 
+                               id="name" 
+                               name="name" 
+                               class="form-input" 
+                               value="{% if tenant %}{{ tenant.name }}{% endif %}"
+                               required
+                               placeholder="Enter tenant's full name">
+                        <div class="form-help">The tenant's complete legal name</div>
+                        <div class="form-error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" 
+                               id="email" 
+                               name="email" 
+                               class="form-input" 
+                               value="{% if tenant %}{{ tenant.email or '' }}{% endif %}"
+                               placeholder="tenant@example.com">
+                        <div class="form-help">Optional email for notifications</div>
+                        <div class="form-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div style="margin-bottom: 32px;">
+                <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                    📞 Contact Information
+                </h2>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="phone" class="form-label">Phone Number *</label>
+                        <input type="tel" 
+                               id="phone" 
+                               name="phone" 
+                               class="form-input" 
+                               value="{% if tenant %}{{ tenant.phone }}{% endif %}"
+                               required
+                               placeholder="(555) 123-4567">
+                        <div class="form-help">Primary contact number</div>
+                        <div class="form-error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                        <input type="tel" 
+                               id="emergency_contact" 
+                               name="emergency_contact" 
+                               class="form-input" 
+                               value="{% if tenant %}{{ tenant.emergency_contact or '' }}{% endif %}"
+                               placeholder="(555) 987-6543">
+                        <div class="form-help">Emergency contact phone number</div>
+                        <div class="form-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Property Information -->
+            <div style="margin-bottom: 32px;">
+                <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                    🏢 Property Information
+                </h2>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="unit_number" class="form-label">Unit/Apartment Number</label>
+                        <input type="text" 
+                               id="unit_number" 
+                               name="unit_number" 
+                               class="form-input" 
+                               value="{% if tenant %}{{ tenant.unit_number or '' }}{% endif %}"
+                               placeholder="Unit 101, Apt A, etc.">
+                        <div class="form-help">Unit, apartment, or room identifier</div>
+                        <div class="form-error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="rent_amount" class="form-label">Monthly Rent ($)</label>
+                        <input type="number" 
+                               id="rent_amount" 
+                               name="rent_amount" 
+                               class="form-input" 
+                               value="{% if tenant %}{{ tenant.rent_amount or '' }}{% endif %}"
+                               min="0"
+                               step="0.01"
+                               placeholder="1200.00">
+                        <div class="form-help">Monthly rent amount in dollars</div>
+                        <div class="form-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lease Information -->
+            <div style="margin-bottom: 32px;">
+                <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                    📄 Lease Information
+                </h2>
+                
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="lease_start_date" class="form-label">Lease Start Date</label>
+                        <input type="date" 
+                               id="lease_start_date" 
+                               name="lease_start_date" 
+                               class="form-input" 
+                               value="{% if tenant and tenant.lease_start_date %}{{ tenant.lease_start_date.strftime('%Y-%m-%d') }}{% endif %}">
+                        <div class="form-help">When the lease begins</div>
+                        <div class="form-error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="lease_end_date" class="form-label">Lease End Date</label>
+                        <input type="date" 
+                               id="lease_end_date" 
+                               name="lease_end_date" 
+                               class="form-input" 
+                               value="{% if tenant and tenant.lease_end_date %}{{ tenant.lease_end_date.strftime('%Y-%m-%d') }}{% endif %}">
+                        <div class="form-help">When the lease expires</div>
+                        <div class="form-error"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Information -->
+            <div style="margin-bottom: 32px;">
+                <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                    📝 Additional Information
+                </h2>
+                
+                <div class="form-group">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea id="notes" 
+                              name="notes" 
+                              class="form-textarea" 
+                              rows="4"
+                              placeholder="Any additional notes about this tenant...">{% if tenant %}{{ tenant.notes or '' }}{% endif %}</textarea>
+                    <div class="form-help">Any additional information about the tenant</div>
+                    <div class="form-error"></div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div style="display: flex; gap: 16px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+                <button type="submit" class="btn btn-primary btn-large">
+                    {% if action == "add" %}
+                        👤 Add Tenant
+                    {% else %}
+                        💾 Update Tenant
+                    {% endif %}
+                </button>
+                <a href="/tenants" class="btn btn-secondary btn-large">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Form validation
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form[data-validate]');
+    if (!form) return;
+    
+    // Phone number formatting
+    const phoneInputs = document.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            let value = this.value.replace(/\D/g, '');
+            
+            if (value.length >= 6) {
+                value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
+            } else if (value.length >= 3) {
+                value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+            }
+            
+            this.value = value;
+        });
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        const nameInput = document.getElementById('name');
+        const phoneInput = document.getElementById('phone');
+        
+        let isValid = true;
+        
+        // Clear previous errors
+        document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+        document.querySelectorAll('.form-input').forEach(el => el.classList.remove('error'));
+        
+        // Validate name
+        if (!nameInput.value.trim()) {
+            showError(nameInput, 'Name is required');
+            isValid = false;
+        } else if (nameInput.value.trim().length < 2) {
+            showError(nameInput, 'Name must be at least 2 characters');
+            isValid = false;
+        }
+        
+        // Validate phone
+        const phoneDigits = phoneInput.value.replace(/\D/g, '');
+        if (!phoneDigits) {
+            showError(phoneInput, 'Phone number is required');
+            isValid = false;
+        } else if (phoneDigits.length < 10) {
+            showError(phoneInput, 'Phone number must be at least 10 digits');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+    
+    function showError(input, message) {
+        input.classList.add('error');
+        const errorDiv = input.parentNode.querySelector('.form-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.color = '#dc2626';
+        }
+    }
+});
+</script>
+{% endblock %}

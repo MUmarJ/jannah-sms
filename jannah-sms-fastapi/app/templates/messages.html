@@ -1,0 +1,694 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - {{ app_name }}{% endblock %}
+
+{% block page_title %}💬 Messages{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            Send messages and view message history.
+        </p>
+        <a href="/messages/send" class="btn btn-primary">📤 Send Message</a>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Tab Navigation -->
+    <div class="card" style="margin-bottom: 32px;">
+        <div style="border-bottom: 2px solid #e5e7eb; margin-bottom: 24px;">
+            <div style="display: flex; gap: 8px;">
+                <a href="/messages" 
+                   class="nav-tab {% if not request.url.path.endswith('/send') %}active{% endif %}"
+                   style="padding: 12px 24px; text-decoration: none; font-weight: 600; font-size: 18px; border-bottom: 3px solid transparent;">
+                    📋 Message History
+                </a>
+                <a href="/messages/send" 
+                   class="nav-tab {% if request.url.path.endswith('/send') %}active{% endif %}"
+                   style="padding: 12px 24px; text-decoration: none; font-weight: 600; font-size: 18px; border-bottom: 3px solid transparent;">
+                    📤 Send Message
+                </a>
+            </div>
+        </div>
+
+        {% if request.url.path.endswith('/send') %}
+            <!-- Send Message Form -->
+            <form method="post" action="/messages/send" data-validate>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label for="recipient_type" class="form-label">Send To</label>
+                        <select name="recipient_type" id="recipient_type" class="form-select" required>
+                            <option value="">Select recipients...</option>
+                            <option value="all">All Tenants</option>
+                            <option value="paid">Tenants Who Paid Rent</option>
+                            <option value="unpaid">Tenants Who Haven't Paid Rent</option>
+                            <option value="late_fee">Tenants with Late Fees</option>
+                            <option value="custom">Select Individual Tenants</option>
+                        </select>
+                        <div class="form-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="template" class="form-label">Message Template</label>
+                        <select name="template" id="template" class="form-select">
+                            <option value="">Start with a template...</option>
+                            <option value="rent_reminder">Rent Reminder</option>
+                            <option value="payment_received">Payment Received</option>
+                            <option value="late_fee_notice">Late Fee Notice</option>
+                            <option value="maintenance_notice">Maintenance Notice</option>
+                            <option value="custom">Custom Message</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="tenant_selection" style="display: none;">
+                    <label class="form-label">Select Tenants</label>
+                    <div style="max-height: 300px; overflow-y: auto; border: 2px solid #e5e7eb; border-radius: 8px; padding: 16px;">
+                        {% for tenant in tenants %}
+                            <label style="display: block; margin-bottom: 12px; font-size: 18px;">
+                                <input type="checkbox" name="selected_tenants" value="{{ tenant.id }}" 
+                                       style="margin-right: 12px; transform: scale(1.2);">
+                                {{ tenant.name }} - {{ tenant.contact | format_phone }}
+                                {% if tenant.unit_number %}(Unit {{ tenant.unit_number }}){% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="message" class="form-label">Message Content</label>
+                    <textarea name="message" id="message" class="form-textarea" 
+                              placeholder="Type your message here..." 
+                              rows="6" required style="min-height: 150px;"></textarea>
+                    <div class="form-help">Message will be personalized with tenant names and other details.</div>
+                    <div class="form-error"></div>
+                </div>
+
+                <!-- Create Schedule Option -->
+                <div class="form-group" style="margin: 24px 0;">
+                    <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px;">
+                        <label style="display: flex; align-items: center; font-size: 18px; color: #1f2937; margin-bottom: 8px;">
+                            <input type="checkbox" id="create_schedule" name="create_schedule" style="width: 20px; height: 20px; margin-right: 12px;">
+                            ⏰ Create Monthly Schedule
+                        </label>
+                        <p style="color: #6b7280; font-size: 16px; margin: 0 0 16px 0;">
+                            Automatically send this message every month with dynamic rent day (use {rent_day} in your message)
+                        </p>
+                        
+                        <div id="schedule_options" style="display: none;">
+                            <div class="form-group" style="margin: 0;">
+                                <label for="rent_day" class="form-label" style="font-size: 16px;">Rent Due Day Each Month</label>
+                                <select name="rent_day" id="rent_day" class="form-select">
+                                    <option value="1">1st of each month</option>
+                                    <option value="5" selected>5th of each month</option>
+                                    <option value="10">10th of each month</option>
+                                    <option value="15">15th of each month</option>
+                                    <option value="20">20th of each month</option>
+                                    <option value="25">25th of each month</option>
+                                    <option value="30">30th of each month</option>
+                                </select>
+                                <div class="form-help">Example: If you select "5th", {rent_day} will be "August 5th" this month, "September 5th" next month</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="send_time" class="form-label">Send Time</label>
+                    <select name="send_time" id="send_time" class="form-select" required>
+                        <option value="now">Send Immediately</option>
+                        <option value="scheduled">Schedule for Later</option>
+                    </select>
+                </div>
+
+                <div id="schedule_time" style="display: none;">
+                    {% set name_prefix = 'send_' %}
+                    {% set label = '📅 Schedule Message' %}
+                    {% set min_date = today %}
+                    {% set selected_date = today %}
+                    {% set selected_hour = 9 %}
+                    {% set selected_minute = 0 %}
+                    {% set help_text = 'Select when to send the message. The scheduled time must be at least 2 minutes in the future.' %}
+                    {% include 'components/forms/datetime_picker.html' %}
+                </div>
+
+                <div style="text-align: center; margin-top: 32px;">
+                    <button type="submit" class="btn btn-primary btn-large">
+                        📤 Send Message
+                    </button>
+                    <a href="/messages" class="btn btn-secondary btn-large" style="margin-left: 16px;">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+
+        {% else %}
+            <!-- Message History -->
+            <div style="margin-bottom: 24px;">
+                <div class="grid grid-3">
+                    <div class="form-group">
+                        <label for="status_filter" class="form-label">Filter by Status</label>
+                        <select id="status_filter" class="form-select">
+                            <option value="">All Messages</option>
+                            <option value="sent">Sent Successfully</option>
+                            <option value="failed">Failed to Send</option>
+                            <option value="scheduled">Scheduled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" id="date_from" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <input type="date" id="date_to" class="form-input" value="{{ today }}">
+                    </div>
+                </div>
+            </div>
+
+            {% if message_history %}
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Recipient</th>
+                                <th>Message Preview</th>
+                                <th>Status</th>
+                                <th>Sent/Scheduled</th>
+                                <th>Replies</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for message in message_history %}
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ message.tenant_name }}</div>
+                                        <div style="color: #6b7280; font-size: 16px;">
+                                            {{ message.tenant_phone | format_phone }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style="max-width: 300px;">
+                                            {{ message.content[:50] }}{% if message.content|length > 50 %}...{% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-badge 
+                                            {% if message.status == 'sent' %}status-active
+                                            {% elif message.status == 'failed' %}status-error
+                                            {% elif message.status == 'scheduled' %}status-paused
+                                            {% else %}status-inactive{% endif %}">
+                                            {% if message.status == 'sent' %}✅ Sent
+                                            {% elif message.status == 'failed' %}❌ Failed
+                                            {% elif message.status == 'scheduled' %}⏰ Scheduled
+                                            {% else %}⏸️ {{ message.status_display }}{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if message.sent_at %}
+                                            {{ message.sent_at | format_datetime }}
+                                        {% elif message.scheduled_for %}
+                                            {{ message.scheduled_for | format_datetime }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        {% if message.reply_count > 0 %}
+                                            <span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 12px; font-size: 14px; font-weight: 600;">
+                                                💬 {{ message.reply_count }}
+                                            </span>
+                                        {% else %}
+                                            <span style="color: #6b7280; font-size: 16px;">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button class="btn btn-secondary" style="padding: 8px 12px; font-size: 16px;"
+                                                    onclick="viewMessage('{{ message.id }}')">
+                                                👁️ View
+                                            </button>
+                                            {% if message.status == 'scheduled' %}
+                                                <button class="btn btn-warning" style="padding: 8px 12px; font-size: 16px;"
+                                                        onclick="cancelMessage('{{ message.id }}')">
+                                                    ❌ Cancel
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination if needed -->
+                {% if pagination %}
+                    <div style="text-align: center; margin-top: 24px;">
+                        {% if pagination.has_prev %}
+                            <a href="?page={{ pagination.prev_num }}" class="btn btn-secondary">← Previous</a>
+                        {% endif %}
+                        
+                        <span style="margin: 0 16px; font-size: 18px; color: #6b7280;">
+                            Page {{ pagination.page }} of {{ pagination.pages }}
+                        </span>
+                        
+                        {% if pagination.has_next %}
+                            <a href="?page={{ pagination.next_num }}" class="btn btn-secondary">Next →</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+            {% else %}
+                <div style="text-align: center; padding: 64px; color: #6b7280;">
+                    <div style="font-size: 72px; margin-bottom: 24px;">📭</div>
+                    <h3 style="font-size: 24px; margin-bottom: 16px;">No messages found</h3>
+                    <p style="font-size: 18px; margin-bottom: 24px;">You haven't sent any messages yet.</p>
+                    <a href="/messages/send" class="btn btn-primary btn-large">📤 Send Your First Message</a>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.nav-tab {
+    color: #6b7280 !important;
+    transition: all 0.2s ease;
+}
+
+.nav-tab:hover {
+    color: #2563eb !important;
+    border-bottom-color: #93c5fd !important;
+}
+
+.nav-tab.active {
+    color: #2563eb !important;
+    border-bottom-color: #2563eb !important;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Handle recipient type changes
+document.getElementById('recipient_type').addEventListener('change', function() {
+    const tenantSelection = document.getElementById('tenant_selection');
+    if (this.value === 'custom') {
+        tenantSelection.style.display = 'block';
+    } else {
+        tenantSelection.style.display = 'none';
+        // Uncheck all tenant checkboxes
+        document.querySelectorAll('input[name="selected_tenants"]').forEach(cb => {
+            cb.checked = false;
+        });
+    }
+});
+
+// Handle send time changes
+document.getElementById('send_time').addEventListener('change', function() {
+    const scheduleTime = document.getElementById('schedule_time');
+    if (this.value === 'scheduled') {
+        scheduleTime.style.display = 'block';
+        document.getElementById('send_date').required = true;
+    } else {
+        scheduleTime.style.display = 'none';
+        document.getElementById('send_date').required = false;
+    }
+});
+
+// Message templates
+const templates = {
+    'rent_reminder': 'Dear {name}, this is a friendly reminder that your rent payment is due. Please submit your payment by the due date to avoid late fees. Thank you!',
+    'payment_received': 'Dear {name}, we have received your rent payment. Thank you for your prompt payment!',
+    'late_fee_notice': 'Dear {name}, your rent payment is overdue. A late fee has been applied to your account. Please contact us to discuss payment arrangements.',
+    'maintenance_notice': 'Dear {name}, we will be performing maintenance in your unit on {date}. Please ensure someone is available to provide access. Thank you for your cooperation.'
+};
+
+document.getElementById('template').addEventListener('change', function() {
+    const messageField = document.getElementById('message');
+    if (this.value && templates[this.value]) {
+        messageField.value = templates[this.value];
+        App.autoResize(messageField);
+    }
+});
+
+// Filter functionality for message history
+function applyFilters() {
+    const statusFilter = document.getElementById('status_filter');
+    const dateFrom = document.getElementById('date_from');
+    const dateTo = document.getElementById('date_to');
+    
+    if (statusFilter && dateFrom && dateTo) {
+        const params = new URLSearchParams();
+        if (statusFilter.value) params.append('status', statusFilter.value);
+        if (dateFrom.value) params.append('from', dateFrom.value);
+        if (dateTo.value) params.append('to', dateTo.value);
+        
+        const url = params.toString() ? `/messages?${params.toString()}` : '/messages';
+        window.location.href = url;
+    }
+}
+
+// Add event listeners for filters
+document.addEventListener('DOMContentLoaded', function() {
+    const filterElements = ['status_filter', 'date_from', 'date_to'];
+    filterElements.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', applyFilters);
+        }
+    });
+    
+    // Handle send message form interactions
+    initializeSendMessageForm();
+});
+
+function initializeSendMessageForm() {
+    const recipientTypeSelect = document.getElementById('recipient_type');
+    const tenantSelection = document.getElementById('tenant_selection');
+    const sendTimeSelect = document.getElementById('send_time');
+    const scheduleTimeDiv = document.getElementById('schedule_time');
+    const customMinuteCheckbox = document.getElementById('custom_minute');
+    const customMinuteInput = document.getElementById('custom_minute_input');
+    const customMinuteHelp = document.getElementById('custom_minute_help');
+    const sendMinuteSelect = document.getElementById('send_minute');
+    const createScheduleCheckbox = document.getElementById('create_schedule');
+    const scheduleOptions = document.getElementById('schedule_options');
+    
+    if (!recipientTypeSelect) return; // Not on send message page
+    
+    // Handle recipient type changes
+    recipientTypeSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            tenantSelection.style.display = 'block';
+        } else {
+            tenantSelection.style.display = 'none';
+        }
+    });
+    
+    // Handle send time changes
+    sendTimeSelect.addEventListener('change', function() {
+        if (this.value === 'scheduled') {
+            scheduleTimeDiv.style.display = 'block';
+            // Set required attributes for scheduling fields
+            document.getElementById('send_date').required = true;
+            document.getElementById('send_hour').required = true;
+            document.getElementById('send_minute').required = true;
+        } else {
+            scheduleTimeDiv.style.display = 'none';
+            // Remove required attributes
+            document.getElementById('send_date').required = false;
+            document.getElementById('send_hour').required = false;
+            document.getElementById('send_minute').required = false;
+        }
+    });
+    
+    // Handle custom minute checkbox
+    if (customMinuteCheckbox) {
+        customMinuteCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                customMinuteInput.style.display = 'block';
+                customMinuteHelp.style.display = 'block';
+                sendMinuteSelect.style.display = 'none';
+                sendMinuteSelect.required = false;
+                customMinuteInput.required = true;
+            } else {
+                customMinuteInput.style.display = 'none';
+                customMinuteHelp.style.display = 'none';
+                sendMinuteSelect.style.display = 'block';
+                sendMinuteSelect.required = true;
+                customMinuteInput.required = false;
+            }
+        });
+    }
+    
+    // Handle create schedule checkbox
+    if (createScheduleCheckbox && scheduleOptions) {
+        createScheduleCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                scheduleOptions.style.display = 'block';
+            } else {
+                scheduleOptions.style.display = 'none';
+            }
+        });
+    }
+    
+    // Handle template selection
+    const templateSelect = document.getElementById('template');
+    const messageTextarea = document.getElementById('message');
+    
+    if (templateSelect && messageTextarea) {
+        templateSelect.addEventListener('change', function() {
+            const templates = {
+                'rent_reminder': `Hi {tenant_name}, this is a friendly reminder that your rent of ${'{rent_amount}'} is due on {rent_day}. Please make your payment at your earliest convenience. Thank you!`,
+                'payment_received': `Hi {tenant_name}, we have received your rent payment of ${'{rent_amount}'}. Thank you for your prompt payment!`,
+                'late_fee_notice': `Hi {tenant_name}, your rent payment is now overdue. A late fee has been applied to your account. Please contact us to arrange payment immediately.`,
+                'maintenance_notice': `Hi {tenant_name}, we will be performing maintenance work at your unit on [DATE]. Please contact us if you have any questions or concerns.`,
+                'custom': ''
+            };
+            
+            if (templates[this.value] !== undefined) {
+                messageTextarea.value = templates[this.value];
+            }
+        });
+    }
+    
+    // Form validation
+    const form = document.querySelector('form[data-validate]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateSendMessageForm()) {
+                e.preventDefault();
+            }
+        });
+    }
+}
+
+function validateSendMessageForm() {
+    let isValid = true;
+    const errors = [];
+    
+    // Clear previous errors
+    document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
+    
+    // Check recipient selection
+    const recipientType = document.getElementById('recipient_type').value;
+    if (!recipientType) {
+        showError('recipient_type', 'Please select recipients');
+        isValid = false;
+    }
+    
+    if (recipientType === 'custom') {
+        const selectedTenants = document.querySelectorAll('input[name="selected_tenants"]:checked');
+        if (selectedTenants.length === 0) {
+            errors.push('Please select at least one tenant');
+            isValid = false;
+        }
+    }
+    
+    // Check message content
+    const message = document.getElementById('message').value.trim();
+    if (!message) {
+        showError('message', 'Please enter a message');
+        isValid = false;
+    }
+    
+    // Check scheduling fields if scheduled
+    const sendTime = document.getElementById('send_time').value;
+    if (sendTime === 'scheduled') {
+        // Get values from the new datetime picker
+        const sendDate = document.getElementById('send_date').value;
+        const hourFinal = document.getElementById('send_hour_final').value;
+        const minuteFinal = document.getElementById('send_minute_final').value;
+        
+        if (!sendDate) {
+            errors.push('Please select a send date');
+            isValid = false;
+        } else {
+            // Check if date is not in the past
+            const selectedDate = new Date(sendDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (selectedDate < today) {
+                errors.push('Send date cannot be in the past');
+                isValid = false;
+            }
+        }
+        
+        if (!hourFinal && hourFinal !== '0') {
+            errors.push('Please select a time');
+            isValid = false;
+        }
+        
+        // Check if scheduled time is not in the past (with 2 minute buffer)
+        if (sendDate && (hourFinal || hourFinal === '0')) {
+            const hour = parseInt(hourFinal);
+            const minute = parseInt(minuteFinal || '0');
+                
+            const scheduledTime = new Date(sendDate);
+            scheduledTime.setHours(hour, minute, 0, 0);
+            
+            const now = new Date();
+            const bufferTime = new Date(now.getTime() + 2 * 60000); // Add 2 minutes buffer
+            
+            if (scheduledTime <= bufferTime) {
+                errors.push('Scheduled time must be at least 2 minutes in the future');
+                isValid = false;
+            }
+        }
+    }
+    
+    // Show general errors
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            window.showAlert(error, 'danger');
+        });
+    }
+    
+    return isValid;
+}
+
+function showError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = field.parentNode.querySelector('.form-error');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.color = '#dc2626';
+        errorDiv.style.fontSize = '14px';
+        errorDiv.style.marginTop = '4px';
+    }
+    field.classList.add('error');
+}
+
+// View message details
+async function viewMessage(messageId) {
+    try {
+        const message = await App.apiCall(`/api/v1/messages/${messageId}`);
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: white; padding: 32px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <h2 style="margin-bottom: 24px; color: #1f2937;">📬 Message Details</h2>
+                
+                <div style="margin-bottom: 20px;">
+                    <strong style="font-size: 18px;">Recipient:</strong><br>
+                    <span style="font-size: 18px;">${message.tenant_name} - ${message.tenant_contact}</span>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <strong style="font-size: 18px;">Status:</strong><br>
+                    <span class="status-badge ${message.status === 'sent' ? 'status-active' : 
+                          message.status === 'failed' ? 'status-error' : 'status-paused'}" 
+                          style="font-size: 16px; margin-top: 8px;">
+                        ${message.status === 'sent' ? '✅ Sent' : 
+                          message.status === 'failed' ? '❌ Failed' : '⏰ Scheduled'}
+                    </span>
+                </div>
+                
+                ${message.sent_at ? `
+                    <div style="margin-bottom: 20px;">
+                        <strong style="font-size: 18px;">Sent:</strong><br>
+                        <span style="font-size: 18px;">${new Date(message.sent_at).toLocaleString()}</span>
+                    </div>
+                ` : ''}
+                
+                <div style="margin-bottom: 24px;">
+                    <strong style="font-size: 18px;">Message:</strong><br>
+                    <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-top: 8px; font-size: 18px; line-height: 1.6;">
+                        ${message.message_content}
+                    </div>
+                </div>
+                
+                ${message.replies && message.replies.length > 0 ? `
+                    <div style="margin-bottom: 24px;">
+                        <strong style="font-size: 18px;">💬 Replies (${message.replies.length}):</strong>
+                        <div style="max-height: 200px; overflow-y: auto; margin-top: 8px;">
+                            ${message.replies.map(reply => `
+                                <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid #0288d1;">
+                                    <div style="font-size: 14px; color: #0277bd; margin-bottom: 4px;">
+                                        <strong>From:</strong> ${reply.from_number} • <strong>Received:</strong> ${reply.formatted_received_at}
+                                    </div>
+                                    <div style="font-size: 16px; line-height: 1.5;">${reply.reply_text}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <div style="margin-bottom: 24px;">
+                        <div style="text-align: center; padding: 16px; color: #6b7280; font-style: italic; font-size: 16px;">
+                            💬 No replies received yet
+                        </div>
+                    </div>
+                `}
+                
+                <div style="text-align: center;">
+                    <button onclick="closeMessageModal()" class="btn btn-primary">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        // Store modal reference for closing
+        window.currentMessageModal = modal;
+        
+        // Close modal when clicking outside
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                closeMessageModal();
+            }
+        };
+        
+        // Close modal on Escape key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                closeMessageModal();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+    } catch (error) {
+        window.showAlert('Failed to load message details', 'danger');
+    }
+}
+
+// Close message modal function
+function closeMessageModal() {
+    if (window.currentMessageModal && window.currentMessageModal.parentElement) {
+        window.currentMessageModal.parentElement.removeChild(window.currentMessageModal);
+        window.currentMessageModal = null;
+    }
+}
+
+// Cancel scheduled message
+async function cancelMessage(messageId) {
+    const confirmed = await App.confirm(
+        'Are you sure you want to cancel this scheduled message?',
+        'Cancel Message'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/messages/${messageId}/cancel`, {
+                method: 'POST'
+            });
+            window.showAlert('Message cancelled successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to cancel message', 'danger');
+        }
+    }
+}
+</script>
+{% endblock %}

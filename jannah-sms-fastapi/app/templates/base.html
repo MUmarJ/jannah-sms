@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SMS Management System for Property Management - Simple and Easy to Use">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    
+    <!-- Elderly-friendly CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='images/favicon.ico') }}">
+    
+    <!-- Additional CSS -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="sr-only">Skip to main content</a>
+    
+    <!-- Main Navigation -->
+    <nav class="main-nav" role="navigation" aria-label="Main navigation">
+        <div class="nav-container">
+            <a href="/dashboard" class="nav-brand">
+                📱 {{ app_name }}
+            </a>
+            
+            <ul class="nav-menu" role="menubar">
+                <li role="none">
+                    <a href="/dashboard" 
+                       class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}" 
+                       role="menuitem">
+                        🏠 Dashboard
+                    </a>
+                </li>
+                <li role="none">
+                    <a href="/messages" 
+                       class="nav-item {% if request.url.path.startswith('/messages') %}active{% endif %}" 
+                       role="menuitem">
+                        💬 Messages
+                    </a>
+                </li>
+                <li role="none">
+                    <a href="/tenants" 
+                       class="nav-item {% if request.url.path.startswith('/tenants') %}active{% endif %}" 
+                       role="menuitem">
+                        👥 Tenants
+                    </a>
+                </li>
+                <li role="none">
+                    <a href="/schedules" 
+                       class="nav-item {% if request.url.path.startswith('/schedules') %}active{% endif %}" 
+                       role="menuitem">
+                        ⏰ Schedules
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Flash Messages / Alerts -->
+    {% if messages %}
+        <div class="container" style="padding-top: 16px;">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert" aria-live="polite">
+                    {% if category == 'success' %}✅{% elif category == 'warning' %}⚠️{% elif category == 'danger' %}❌{% else %}ℹ️{% endif %}
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main id="main-content" class="main-content" role="main">
+        <div class="container">
+            <!-- Page Header -->
+            {% block page_header %}
+                <div class="card-header">
+                    <h1 class="card-title">{% block page_title %}{{ app_name }}{% endblock %}</h1>
+                    {% block page_description %}{% endblock %}
+                </div>
+            {% endblock %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer style="background-color: white; border-top: 1px solid #e5e7eb; padding: 24px 0; margin-top: 48px;">
+        <div class="container">
+            <div class="grid grid-2">
+                <div>
+                    <p style="margin: 0; color: #6b7280; font-size: 16px;">
+                        © 2024 {{ company_name }}. All rights reserved.
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0; color: #6b7280; font-size: 16px;">
+                        Powered by Jannah SMS Admin v2.0
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Base JavaScript -->
+    <script src="{{ url_for('static', path='js/main.js') }}"></script>
+    
+    <!-- Additional JavaScript -->
+    {% block extra_js %}{% endblock %}
+
+    <!-- Initialize tooltips and accessibility features -->
+    <script>
+        // Simple accessibility improvements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add keyboard navigation to nav items
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        item.click();
+                    }
+                });
+            });
+
+            // Announce page changes to screen readers
+            const pageTitle = document.querySelector('h1');
+            if (pageTitle) {
+                pageTitle.setAttribute('aria-live', 'polite');
+            }
+
+            // Auto-focus on first input field for forms
+            const firstInput = document.querySelector('input[type="text"], input[type="email"], input[type="tel"], textarea');
+            if (firstInput && !window.location.hash) {
+                setTimeout(() => {
+                    firstInput.focus();
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

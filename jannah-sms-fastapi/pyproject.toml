@@ -1,0 +1,44 @@
+[project]
+name = "jannah-sms-fastapi"
+version = "2.0.0"
+description = "Modern SMS scheduling system for property management with elderly-friendly interface"
+authors = [
+    {name = "Jannah SMS Team", email = "admin@jannah-sms.com"},
+]
+dependencies = [
+    "fastapi>=0.115.13",
+    "uvicorn[standard]>=0.32.1",
+    "jinja2>=3.1.4",
+    "python-multipart>=0.0.17",
+    "pydantic-settings>=2.7.0",
+    "sqlalchemy>=2.0.36",
+    "apscheduler>=4.1.0",
+    "requests>=2.32.3",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.1",
+    "black>=24.10.0",
+    "ruff>=0.8.4",
+]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+select = ["E", "F", "W", "I", "N", "UP", "S", "B", "A", "C90"]
+ignore = ["E501", "S101"]
