@@ -3,12 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SMS Management System for Property Management - Simple and Easy to Use">
+    <meta name="description" content="{{ app_tagline }}">
     <title>{% block title %}{{ app_name }}{% endblock %}</title>
     
     <!-- Elderly-friendly CSS -->
     <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
-    
+
+    <!-- Dynamic theming -->
+    <style>
+        :root {
+            --primary-color: {{ primary_color }};
+            --secondary-color: {{ secondary_color }};
+        }
+        .nav-brand { color: var(--primary-color) !important; }
+        .nav-item.active { background-color: var(--primary-color) !important; }
+        .btn-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+    </style>
+
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='images/favicon.ico') }}">
     
@@ -23,7 +34,7 @@
     <nav class="main-nav" role="navigation" aria-label="Main navigation">
         <div class="nav-container">
             <a href="/dashboard" class="nav-brand">
-                📱 {{ app_name }}
+                {{ app_icon }} {{ app_name }}
             </a>
             
             <ul class="nav-menu" role="menubar">
@@ -98,7 +109,7 @@
                 </div>
                 <div style="text-align: right;">
                     <p style="margin: 0; color: #6b7280; font-size: 16px;">
-                        Powered by Jannah SMS Admin v2.0
+                        {{ powered_by }}
                     </p>
                 </div>
             </div>

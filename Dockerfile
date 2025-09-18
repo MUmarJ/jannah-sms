@@ -47,7 +47,7 @@ RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
 ENV PYTHONPATH=/app \
     PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    DATABASE_URL=sqlite:///./data/jannah_sms.db \
+    DATABASE_URL=sqlite:///./jannah_sms.db \
     SECRET_KEY=your-secret-key-change-in-production \
     DEBUG=false
 

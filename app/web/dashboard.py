@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.models.tenant import Tenant
 from app.models.message import Message, MessageStatus
 from app.models.schedule import Schedule, ScheduleStatus
-from app.core.templates import templates
+from app.core.templates import templates, get_template_context
 from app.services.sms_service import sms_service
 
 logger = logging.getLogger(__name__)
@@ -91,20 +91,20 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
 
         return templates.TemplateResponse(
             "dashboard.html",
-            {
-                "request": request,
-                "stats": stats,
-                "recent_messages": formatted_messages,
-                "upcoming_schedules": formatted_schedules,
-                "system_status": system_status,
-                "sms_quota": sms_quota,
-            },
+            get_template_context(
+                request,
+                stats=stats,
+                recent_messages=formatted_messages,
+                upcoming_schedules=formatted_schedules,
+                system_status=system_status,
+                sms_quota=sms_quota,
+            ),
         )
 
     except Exception as e:
         logger.error(f"Dashboard page error: {str(e)}")
         return templates.TemplateResponse(
-            "error.html", {"request": request, "error": "Failed to load dashboard"}
+            "error.html", get_template_context(request, error="Failed to load dashboard")
         )
 
 
