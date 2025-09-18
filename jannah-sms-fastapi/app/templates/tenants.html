@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Tenants - {{ app_name }}{% endblock %}
+
+{% block page_title %}👥 Tenants{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            Manage tenant information and payment status.
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <a href="/tenants/import" class="btn btn-secondary">📋 Import</a>
+            <a href="/tenants/add" class="btn btn-primary">👤 Add Tenant</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Search and Filters -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div class="grid grid-3">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="search" class="form-label">Search Tenants</label>
+                <input type="text" id="search" class="form-input" 
+                       placeholder="Search by name, phone, or unit...">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="payment_status" class="form-label">Payment Status</label>
+                <select id="payment_status" class="form-select">
+                    <option value="">All Tenants</option>
+                    <option value="paid">Rent Paid</option>
+                    <option value="unpaid">Rent Not Paid</option>
+                    <option value="late">Late Fees</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="sort_by" class="form-label">Sort By</label>
+                <select id="sort_by" class="form-select">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="unit">Unit Number</option>
+                    <option value="payment_date">Last Payment</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-4" style="margin-bottom: 32px;">
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">👥</div>
+            <h3 style="margin: 0; font-size: 24px; color: #2563eb;">{{ stats.total_tenants or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Total Tenants</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">✅</div>
+            <h3 style="margin: 0; font-size: 24px; color: #059669;">{{ stats.paid_tenants or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Rent Paid</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">⏰</div>
+            <h3 style="margin: 0; font-size: 24px; color: #d97706;">{{ stats.unpaid_tenants or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Rent Due</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">❌</div>
+            <h3 style="margin: 0; font-size: 24px; color: #dc2626;">{{ stats.late_fee_tenants or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Late Fees</p>
+        </div>
+    </div>
+
+    <!-- Tenants Table -->
+    {% if tenants %}
+        <div class="card">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tenant</th>
+                            <th>Unit</th>
+                            <th>Contact</th>
+                            <th>Rent Status</th>
+                            <th>Last Payment</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tenant-table-body">
+                        {% for tenant in tenants %}
+                            <tr data-tenant="{{ tenant.name | lower }}" 
+                                data-unit="{{ tenant.unit_number or '' }}" 
+                                data-phone="{{ tenant.phone or '' }}"
+                                data-payment="{{ 'paid' if tenant.is_current_month_rent_paid else 'unpaid' }}"
+                                data-late="{{ 'true' if tenant.late_fee_applicable else 'false' }}">
+                                <td>
+                                    <div style="font-weight: 600; font-size: 18px;">{{ tenant.name }}</div>
+                                    {% if tenant.email %}
+                                        <div style="color: #6b7280; font-size: 16px;">{{ tenant.email }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tenant.unit_number %}
+                                        <span style="font-weight: 600; font-size: 18px;">{{ tenant.unit_number }}</span>
+                                    {% else %}
+                                        <span style="color: #9ca3af;">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="font-size: 18px;">{{ tenant.contact | format_phone }}</div>
+                                    {% if tenant.emergency_contact %}
+                                        <div style="color: #6b7280; font-size: 16px;">
+                                            Emergency: {{ tenant.emergency_contact | format_phone }}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <span class="status-badge 
+                                            {% if tenant.is_current_month_rent_paid %}status-active
+                                            {% else %}status-error{% endif %}">
+                                            {% if tenant.is_current_month_rent_paid %}✅ Paid{% else %}❌ Due{% endif %}
+                                        </span>
+                                        {% if tenant.late_fee_applicable %}
+                                            <span class="status-badge status-error" style="font-size: 14px;">
+                                                💰 Late Fee
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if tenant.last_payment_date %}
+                                        <span style="font-size: 16px;">{{ tenant.last_payment_date | format_datetime("%b %d, %Y") }}</span>
+                                    {% else %}
+                                        <span style="color: #9ca3af;">No payments</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 16px;"
+                                                onclick="editTenant({{ tenant.id }})">
+                                            ✏️ Edit
+                                        </button>
+                                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 16px;"
+                                                onclick="sendMessage({{ tenant.id }}, '{{ tenant.name }}')">
+                                            💬 SMS
+                                        </button>
+                                        {% if not tenant.is_current_month_rent_paid %}
+                                            <button class="btn btn-success" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="markPaid({{ tenant.id }})">
+                                                ✅ Mark Paid
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination %}
+                <div style="text-align: center; margin-top: 24px; padding-top: 24px; border-top: 1px solid #e5e7eb;">
+                    {% if pagination.has_prev %}
+                        <a href="?page={{ pagination.prev_num }}" class="btn btn-secondary">← Previous</a>
+                    {% endif %}
+                    
+                    <span style="margin: 0 16px; font-size: 18px; color: #6b7280;">
+                        Page {{ pagination.page }} of {{ pagination.pages }}
+                    </span>
+                    
+                    {% if pagination.has_next %}
+                        <a href="?page={{ pagination.next_num }}" class="btn btn-secondary">Next →</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="card" style="text-align: center; padding: 64px;">
+            <div style="font-size: 72px; margin-bottom: 24px;">👥</div>
+            <h2 style="font-size: 28px; margin-bottom: 16px; color: #374151;">No Tenants Found</h2>
+            <p style="font-size: 18px; margin-bottom: 32px; color: #6b7280;">
+                Get started by adding your first tenant or importing from a spreadsheet.
+            </p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="/tenants/add" class="btn btn-primary btn-large">👤 Add First Tenant</a>
+                <a href="/tenants/import" class="btn btn-secondary btn-large">📋 Import from File</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Bulk Actions -->
+    {% if tenants %}
+        <div class="card" style="margin-top: 32px;">
+            <h2 style="margin-bottom: 16px;">🔧 Bulk Actions</h2>
+            <div class="grid grid-3">
+                <button class="btn btn-primary btn-large" onclick="markAllPaid()">
+                    ✅ Mark All as Paid
+                </button>
+                <button class="btn btn-warning btn-large" onclick="sendRentReminders()">
+                    📤 Send Rent Reminders
+                </button>
+                <button class="btn btn-secondary btn-large" onclick="exportTenants()">
+                    📊 Export to Excel
+                </button>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Search and filter functionality
+function filterTenants() {
+    const searchTerm = document.getElementById('search').value.toLowerCase();
+    const paymentStatus = document.getElementById('payment_status').value;
+    const rows = document.querySelectorAll('#tenant-table-body tr');
+    
+    rows.forEach(row => {
+        const tenantData = row.dataset.tenant + ' ' + row.dataset.unit + ' ' + row.dataset.phone;
+        const matchesSearch = searchTerm === '' || tenantData.includes(searchTerm);
+        
+        let matchesPayment = true;
+        if (paymentStatus === 'paid') {
+            matchesPayment = row.dataset.payment === 'paid';
+        } else if (paymentStatus === 'unpaid') {
+            matchesPayment = row.dataset.payment === 'unpaid';
+        } else if (paymentStatus === 'late') {
+            matchesPayment = row.dataset.late === 'true';
+        }
+        
+        row.style.display = (matchesSearch && matchesPayment) ? '' : 'none';
+    });
+}
+
+// Sort functionality
+function sortTenants() {
+    const sortBy = document.getElementById('sort_by').value;
+    const tbody = document.getElementById('tenant-table-body');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        let aVal, bVal;
+        
+        switch(sortBy) {
+            case 'name':
+                aVal = a.dataset.tenant;
+                bVal = b.dataset.tenant;
+                break;
+            case 'unit':
+                aVal = a.dataset.unit || 'zzz';
+                bVal = b.dataset.unit || 'zzz';
+                break;
+            case 'payment_date':
+                aVal = a.querySelector('td:nth-child(5)').textContent.trim();
+                bVal = b.querySelector('td:nth-child(5)').textContent.trim();
+                break;
+        }
+        
+        return aVal.localeCompare(bVal);
+    });
+    
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('search').addEventListener('input', filterTenants);
+    document.getElementById('payment_status').addEventListener('change', filterTenants);
+    document.getElementById('sort_by').addEventListener('change', sortTenants);
+});
+
+// Edit tenant
+function editTenant(tenantId) {
+    window.location.href = `/tenants/${tenantId}/edit`;
+}
+
+// Send message to specific tenant
+function sendMessage(tenantId, tenantName) {
+    window.location.href = `/messages/send?tenant=${tenantId}`;
+}
+
+// Mark tenant as paid
+async function markPaid(tenantId) {
+    const confirmed = await App.confirm(
+        'Mark this tenant as having paid rent for this month?',
+        'Mark as Paid'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/tenants/${tenantId}/mark-paid`, {
+                method: 'POST'
+            });
+            window.showAlert('Tenant marked as paid successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to mark tenant as paid', 'danger');
+        }
+    }
+}
+
+// Bulk mark all as paid
+async function markAllPaid() {
+    const confirmed = await App.confirm(
+        'Mark ALL tenants as having paid rent for this month? This action cannot be undone.',
+        'Mark All as Paid'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall('/api/v1/tenants/bulk-mark-paid', {
+                method: 'POST'
+            });
+            window.showAlert('All tenants marked as paid successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to mark all tenants as paid', 'danger');
+        }
+    }
+}
+
+// Send rent reminders
+async function sendRentReminders() {
+    const confirmed = await App.confirm(
+        'Send rent reminder messages to all tenants who haven\'t paid yet?',
+        'Send Rent Reminders'
+    );
+    
+    if (confirmed) {
+        try {
+            const response = await App.apiCall('/api/v1/messages/send-rent-reminders', {
+                method: 'POST'
+            });
+            window.showAlert(`Sent reminders to ${response.count} tenants`, 'success');
+        } catch (error) {
+            window.showAlert('Failed to send rent reminders', 'danger');
+        }
+    }
+}
+
+// Export tenants
+async function exportTenants() {
+    try {
+        const response = await fetch('/api/v1/tenants/export');
+        const blob = await response.blob();
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tenants_${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        window.showAlert('Tenant data exported successfully', 'success');
+    } catch (error) {
+        window.showAlert('Failed to export tenant data', 'danger');
+    }
+}
+
+// Auto-refresh payment status every 5 minutes
+setInterval(async function() {
+    try {
+        const response = await App.apiCall('/api/v1/tenants/stats');
+        // Update stats without full reload
+        document.querySelector('.grid-4 .card:nth-child(1) h3').textContent = response.total_tenants;
+        document.querySelector('.grid-4 .card:nth-child(2) h3').textContent = response.paid_tenants;
+        document.querySelector('.grid-4 .card:nth-child(3) h3').textContent = response.unpaid_tenants;
+        document.querySelector('.grid-4 .card:nth-child(4) h3').textContent = response.late_fee_tenants;
+    } catch (error) {
+        console.log('Failed to refresh stats');
+    }
+}, 300000); // 5 minutes
+</script>
+{% endblock %}

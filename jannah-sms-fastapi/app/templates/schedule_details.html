@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}{{ schedule.name }} - Schedule Details - {{ app_name }}{% endblock %}
+
+{% block page_title %}📅 Schedule Details{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            View and manage schedule configuration and execution history.
+        </p>
+        <div style="display: flex; gap: 12px;">
+            <a href="/schedules" class="btn btn-secondary">← Back to Schedules</a>
+            <a href="/schedules/{{ schedule.id }}/edit" class="btn btn-primary">✏️ Edit Schedule</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Schedule Overview -->
+    <div class="card" style="margin-bottom: 32px;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 24px;">
+            <div>
+                <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 8px; color: #1f2937;">
+                    {{ schedule.name }}
+                </h1>
+                {% if schedule.description %}
+                    <p style="font-size: 18px; color: #6b7280; margin: 0;">
+                        {{ schedule.description }}
+                    </p>
+                {% endif %}
+            </div>
+            <div style="text-align: right;">
+                <span class="status-badge 
+                    {% if schedule.status == 'active' %}status-active
+                    {% elif schedule.status == 'paused' %}status-warning
+                    {% else %}status-inactive{% endif %}"
+                    style="font-size: 16px; padding: 8px 16px;">
+                    {% if schedule.status == 'active' %}🟢 Active
+                    {% elif schedule.status == 'paused' %}⏸️ Paused
+                    {% else %}⏹️ {{ schedule.status_display }}{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-4">
+            <div style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">📊</div>
+                <h3 style="margin: 0; font-size: 28px; color: #2563eb;">{{ schedule.execution_count }}</h3>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Total Runs</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">✅</div>
+                <h3 style="margin: 0; font-size: 28px; color: #059669;">{{ schedule.success_count }}</h3>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Successful</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">❌</div>
+                <h3 style="margin: 0; font-size: 28px; color: #dc2626;">{{ schedule.failure_count }}</h3>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Failed</p>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 36px; margin-bottom: 8px;">⏰</div>
+                <h3 style="margin: 0; font-size: 20px; color: #7c2d12;">
+                    {% if schedule.next_run %}
+                        {{ schedule.next_run | format_datetime("%b %d, %H:%M") }}
+                    {% else %}
+                        Not Scheduled
+                    {% endif %}
+                </h3>
+                <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Next Run</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-2">
+        <!-- Schedule Configuration -->
+        <div class="card">
+            <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                ⚙️ Configuration
+            </h2>
+            
+            <div style="space-y: 16px;">
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #374151;">Schedule Type</h4>
+                    <p style="margin: 0; font-size: 18px; color: #6b7280;">{{ schedule.schedule_type.replace('_', ' ').title() }}</p>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #374151;">Frequency</h4>
+                    <p style="margin: 0; font-size: 18px; color: #6b7280;">{{ schedule.schedule_display }}</p>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #374151;">Target Conditions</h4>
+                    <p style="margin: 0; font-size: 18px; color: #6b7280;">{{ schedule.conditions_summary or 'All active tenants' }}</p>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #374151;">Last Run</h4>
+                    <p style="margin: 0; font-size: 18px; color: #6b7280;">
+                        {% if schedule.last_run %}
+                            {{ schedule.last_run | format_datetime("%b %d, %Y at %H:%M") }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 4px; color: #374151;">Created</h4>
+                    <p style="margin: 0; font-size: 18px; color: #6b7280;">{{ schedule.created_at | format_datetime("%b %d, %Y at %H:%M") }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Template -->
+        <div class="card">
+            <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+                💬 Message Template
+            </h2>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 12px; border-left: 4px solid #2563eb;">
+                <p style="margin: 0; font-size: 18px; line-height: 1.6; white-space: pre-wrap;">{{ schedule.message_template }}</p>
+            </div>
+            
+            <div style="margin-top: 16px;">
+                <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #374151;">Available Placeholders:</h4>
+                <ul style="margin: 0; padding-left: 20px; font-size: 16px; color: #6b7280;">
+                    <li><code>{tenant_name}</code> - Tenant's full name</li>
+                    <li><code>{rent_amount}</code> - Monthly rent amount</li>
+                    <li><code>{due_date}</code> - Rent due date</li>
+                    <li><code>{building}</code> - Building/unit information</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Actions -->
+    <div class="card" style="margin-top: 32px;">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+            🔧 Schedule Actions
+        </h2>
+        
+        <div class="grid grid-3">
+            {% if schedule.status == 'active' %}
+                <button class="btn btn-warning btn-large" onclick="pauseSchedule({{ schedule.id }})">
+                    ⏸️ Pause Schedule
+                </button>
+            {% else %}
+                <button class="btn btn-success btn-large" onclick="resumeSchedule({{ schedule.id }})">
+                    ▶️ Resume Schedule
+                </button>
+            {% endif %}
+            
+            <button class="btn btn-primary btn-large" onclick="runNow({{ schedule.id }})">
+                ▶️ Run Now
+            </button>
+            
+            <button class="btn btn-danger btn-large" onclick="deleteSchedule({{ schedule.id }})">
+                🗑️ Delete Schedule
+            </button>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Schedule management functions
+async function pauseSchedule(scheduleId) {
+    const confirmed = await App.confirm(
+        'Pause this schedule? It will stop running automatically until resumed.',
+        'Pause Schedule'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/schedules/${scheduleId}/pause`, {
+                method: 'POST'
+            });
+            window.showAlert('Schedule paused successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to pause schedule', 'danger');
+        }
+    }
+}
+
+async function resumeSchedule(scheduleId) {
+    const confirmed = await App.confirm(
+        'Resume this schedule? It will start running automatically again.',
+        'Resume Schedule'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/schedules/${scheduleId}/resume`, {
+                method: 'POST'
+            });
+            window.showAlert('Schedule resumed successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to resume schedule', 'danger');
+        }
+    }
+}
+
+async function runNow(scheduleId) {
+    const confirmed = await App.confirm(
+        'Execute this schedule immediately? Messages will be sent to all matching tenants.',
+        'Run Schedule Now'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/schedules/${scheduleId}/execute`, {
+                method: 'POST'
+            });
+            window.showAlert('Schedule executed successfully', 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (error) {
+            window.showAlert('Failed to execute schedule', 'danger');
+        }
+    }
+}
+
+async function deleteSchedule(scheduleId) {
+    const confirmed = await App.confirm(
+        'Delete this schedule permanently? This action cannot be undone.',
+        'Delete Schedule'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/schedules/${scheduleId}`, {
+                method: 'DELETE'
+            });
+            window.showAlert('Schedule deleted successfully', 'success');
+            setTimeout(() => window.location.href = '/schedules', 1500);
+        } catch (error) {
+            window.showAlert('Failed to delete schedule', 'danger');
+        }
+    }
+}
+</script>
+{% endblock %}

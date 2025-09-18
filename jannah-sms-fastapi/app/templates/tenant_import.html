@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Import Tenants - {{ app_name }}{% endblock %}
+
+{% block page_title %}📋 Import Tenants{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            Upload a CSV file to import multiple tenants at once.
+        </p>
+        <a href="/tenants" class="btn btn-secondary">← Back to Tenants</a>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Import Instructions -->
+    <div class="card" style="margin-bottom: 32px;">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 16px; color: #1f2937;">
+            📋 Import Instructions
+        </h2>
+        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+            <p style="margin: 0 0 12px 0; font-size: 18px; line-height: 1.6;">
+                Your CSV file should have these columns (in any order):
+            </p>
+            <ul style="margin: 0; padding-left: 24px; font-size: 18px; line-height: 1.8;">
+                <li><strong>Name</strong> - Full name of the tenant (required)</li>
+                <li><strong>Contact</strong> - Phone number (required)</li>
+                <li><strong>Rent</strong> - Monthly rent amount (optional)</li>
+                <li><strong>Due Date</strong> - When rent is due (optional)</li>
+                <li><strong>Building</strong> - Building or unit info (optional)</li>
+                <li><strong>Notes</strong> - Additional notes (optional)</li>
+            </ul>
+        </div>
+        <div style="background-color: #fef3c7; padding: 16px; border-radius: 8px; border-left: 4px solid #f59e0b;">
+            <p style="margin: 0; font-size: 16px; color: #92400e;">
+                <strong>💡 Tip:</strong> Make sure phone numbers are complete (include area code) and names are spelled correctly.
+            </p>
+        </div>
+    </div>
+
+    <!-- Upload Form -->
+    <div class="card">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
+            📤 Upload CSV File
+        </h2>
+        
+        <form method="post" action="/tenants/import" enctype="multipart/form-data" data-validate>
+            <div class="form-group">
+                <label for="file" class="form-label">Select CSV File</label>
+                <input type="file" 
+                       id="file" 
+                       name="file" 
+                       class="form-input" 
+                       accept=".csv" 
+                       required
+                       style="padding: 16px; font-size: 18px;">
+                <div class="form-help">Choose a CSV file with tenant information</div>
+                <div class="form-error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-checkbox">
+                    <input type="checkbox" name="overwrite_existing" value="true">
+                    <span class="form-checkbox-mark"></span>
+                    <span class="form-checkbox-text">Update existing tenants if phone number matches</span>
+                </label>
+                <div class="form-help">If checked, existing tenants with matching phone numbers will be updated with new information</div>
+            </div>
+
+            <div style="display: flex; gap: 16px; margin-top: 32px;">
+                <button type="submit" class="btn btn-primary" style="font-size: 18px;">
+                    📤 Import Tenants
+                </button>
+                <a href="/tenants" class="btn btn-secondary" style="font-size: 18px;">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sample CSV Download -->
+    <div class="card" style="margin-top: 32px;">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 16px; color: #1f2937;">
+            📥 Sample CSV Template
+        </h2>
+        <p style="font-size: 18px; margin-bottom: 16px; color: #6b7280;">
+            Download a sample CSV file to see the correct format:
+        </p>
+        <a href="#" onclick="downloadSampleCSV()" class="btn btn-outline" style="font-size: 18px;">
+            📥 Download Sample CSV
+        </a>
+    </div>
+
+    <script>
+        function downloadSampleCSV() {
+            const csvContent = `Name,Contact,Rent,Due Date,Building,Notes
+John Smith,555-0123,1200,1st of month,Building A - Unit 101,Excellent tenant
+Jane Doe,555-0456,1500,5th of month,Building B - Unit 205,New tenant
+Mike Johnson,555-0789,1100,15th of month,Building A - Unit 103,`;
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'tenant_import_sample.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+{% endblock %}

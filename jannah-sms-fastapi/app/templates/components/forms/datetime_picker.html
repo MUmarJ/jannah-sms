@@ -1,0 +1,527 @@
+<!-- Enhanced DateTime Picker Component -->
+<!-- This component provides better date and time selection for elderly-friendly UI -->
+
+<div class="datetime-picker-wrapper" data-datetime-picker>
+    <div class="form-group">
+        <label class="form-label">{{ label or "Schedule Date & Time" }}</label>
+        
+        <!-- Date Selection -->
+        <div class="date-time-container">
+            <!-- Calendar-style date picker -->
+            <div class="date-picker-section">
+                <label class="sub-label">📅 Select Date</label>
+                <div class="calendar-wrapper">
+                    <input type="date" 
+                           name="{{ name_prefix }}date" 
+                           id="{{ name_prefix }}date"
+                           class="form-input date-input" 
+                           min="{{ min_date or today }}"
+                           value="{{ selected_date or today }}"
+                           required="{{ required or 'true' }}">
+                    
+                    <!-- Quick date shortcuts -->
+                    <div class="date-shortcuts">
+                        <button type="button" class="btn btn-secondary btn-small" onclick="setDateToday('{{ name_prefix }}date')">Today</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="setDateTomorrow('{{ name_prefix }}date')">Tomorrow</button>
+                        <button type="button" class="btn btn-secondary btn-small" onclick="setDateNextWeek('{{ name_prefix }}date')">Next Week</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Time Selection -->
+            <div class="time-picker-section">
+                <label class="sub-label">⏰ Select Time</label>
+                
+                <!-- Time selection method toggle -->
+                <div class="time-method-toggle">
+                    <label class="radio-option">
+                        <input type="radio" 
+                               name="{{ name_prefix }}time_method" 
+                               value="preset" 
+                               checked 
+                               onchange="toggleTimeMethod('{{ name_prefix }}', 'preset')">
+                        <span>Common Times</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" 
+                               name="{{ name_prefix }}time_method" 
+                               value="custom" 
+                               onchange="toggleTimeMethod('{{ name_prefix }}', 'custom')">
+                        <span>Custom Time</span>
+                    </label>
+                </div>
+                
+                <!-- Preset time selection -->
+                <div id="{{ name_prefix }}preset_time" class="preset-time-options">
+                    <div class="time-grid">
+                        <button type="button" class="time-option" onclick="selectTime('{{ name_prefix }}', 9, 0)" data-time="9:00">
+                            <span class="time">9:00 AM</span>
+                            <span class="desc">Morning</span>
+                        </button>
+                        <button type="button" class="time-option" onclick="selectTime('{{ name_prefix }}', 12, 0)" data-time="12:00">
+                            <span class="time">12:00 PM</span>
+                            <span class="desc">Noon</span>
+                        </button>
+                        <button type="button" class="time-option" onclick="selectTime('{{ name_prefix }}', 14, 0)" data-time="14:00">
+                            <span class="time">2:00 PM</span>
+                            <span class="desc">Afternoon</span>
+                        </button>
+                        <button type="button" class="time-option" onclick="selectTime('{{ name_prefix }}', 17, 0)" data-time="17:00">
+                            <span class="time">5:00 PM</span>
+                            <span class="desc">Evening</span>
+                        </button>
+                        <button type="button" class="time-option" onclick="selectTime('{{ name_prefix }}', 19, 0)" data-time="19:00">
+                            <span class="time">7:00 PM</span>
+                            <span class="desc">Evening</span>
+                        </button>
+                        <button type="button" class="time-option" onclick="selectTime('{{ name_prefix }}', 21, 0)" data-time="21:00">
+                            <span class="time">9:00 PM</span>
+                            <span class="desc">Night</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Custom time selection -->
+                <div id="{{ name_prefix }}custom_time" class="custom-time-controls" style="display: none;">
+                    <div class="time-inputs">
+                        <div class="hour-input">
+                            <label>Hour</label>
+                            <select name="{{ name_prefix }}hour" 
+                                    id="{{ name_prefix }}hour"
+                                    class="form-select time-select">
+                                <option value="">--</option>
+                                {% for hour in range(0, 24) %}
+                                    <option value="{{ hour }}" 
+                                            {% if selected_hour == hour %}selected{% endif %}>
+                                        {{ "{:02d}".format(hour) }} 
+                                        ({{ hour | format_12hour }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="minute-input">
+                            <label>Minute</label>
+                            <select name="{{ name_prefix }}minute" 
+                                    id="{{ name_prefix }}minute"
+                                    class="form-select time-select">
+                                <option value="0" {% if selected_minute == 0 %}selected{% endif %}>00</option>
+                                <option value="15" {% if selected_minute == 15 %}selected{% endif %}>15</option>
+                                <option value="30" {% if selected_minute == 30 %}selected{% endif %}>30</option>
+                                <option value="45" {% if selected_minute == 45 %}selected{% endif %}>45</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Custom minute input for precise timing -->
+                        <div class="precise-minute">
+                            <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                                <input type="checkbox" id="{{ name_prefix }}precise_minute" onchange="togglePreciseMinute('{{ name_prefix }}')">
+                                <span style="font-size: 14px;">Exact minute (0-59)</span>
+                            </label>
+                            <input type="number" 
+                                   id="{{ name_prefix }}precise_minute_value"
+                                   name="{{ name_prefix }}precise_minute"
+                                   class="form-input" 
+                                   min="0" 
+                                   max="59" 
+                                   style="display: none; width: 80px; margin-top: 4px;"
+                                   placeholder="0">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Selected time display -->
+                <div class="selected-time-display" id="{{ name_prefix }}selected_time" style="margin-top: 16px;">
+                    <div class="selected-time-badge">
+                        <span class="time-icon">⏰</span>
+                        <span class="selected-time-text">No time selected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hidden inputs for form submission -->
+        <input type="hidden" name="{{ name_prefix }}hour_final" id="{{ name_prefix }}hour_final" value="{{ selected_hour or '' }}">
+        <input type="hidden" name="{{ name_prefix }}minute_final" id="{{ name_prefix }}minute_final" value="{{ selected_minute or '0' }}">
+        
+        <div class="form-help">{{ help_text or "Select when to send the message. Ensure the time is at least 2 minutes in the future." }}</div>
+        <div class="form-error"></div>
+    </div>
+</div>
+
+<style>
+/* DateTime Picker Styles */
+.datetime-picker-wrapper {
+    max-width: 100%;
+}
+
+.date-time-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 16px;
+}
+
+@media (max-width: 768px) {
+    .date-time-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+}
+
+.date-picker-section,
+.time-picker-section {
+    background: #f8fafc;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.sub-label {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.calendar-wrapper {
+    text-align: center;
+}
+
+.date-input {
+    font-size: 18px !important;
+    text-align: center;
+    width: 100%;
+    max-width: 200px;
+    margin: 0 auto 16px;
+}
+
+.date-shortcuts {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.time-method-toggle {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.radio-option:hover {
+    background-color: #e5e7eb;
+}
+
+.radio-option input[type="radio"] {
+    transform: scale(1.2);
+}
+
+.time-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+    .time-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.time-option {
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.time-option:hover {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+}
+
+.time-option.selected {
+    border-color: #3b82f6;
+    background-color: #3b82f6;
+    color: white;
+}
+
+.time-option .time {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.time-option .desc {
+    display: block;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.custom-time-controls {
+    margin-top: 16px;
+}
+
+.time-inputs {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    align-items: start;
+    flex-wrap: wrap;
+}
+
+.hour-input,
+.minute-input {
+    text-align: center;
+}
+
+.hour-input label,
+.minute-input label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #374151;
+}
+
+.time-select {
+    width: 100px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.precise-minute {
+    text-align: center;
+}
+
+.selected-time-display {
+    text-align: center;
+}
+
+.selected-time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ecfdf5;
+    border: 2px solid #10b981;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #047857;
+}
+
+.selected-time-badge.no-time {
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    color: #6b7280;
+}
+
+.time-icon {
+    font-size: 20px;
+}
+
+.btn-small {
+    padding: 8px 12px;
+    font-size: 14px;
+}
+</style>
+
+<script>
+// DateTime Picker JavaScript Functions
+function setDateToday(inputId) {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById(inputId).value = today;
+    updateSelectedTimeDisplay(inputId.replace('date', ''));
+}
+
+function setDateTomorrow(inputId) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById(inputId).value = tomorrow.toISOString().split('T')[0];
+    updateSelectedTimeDisplay(inputId.replace('date', ''));
+}
+
+function setDateNextWeek(inputId) {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    document.getElementById(inputId).value = nextWeek.toISOString().split('T')[0];
+    updateSelectedTimeDisplay(inputId.replace('date', ''));
+}
+
+function toggleTimeMethod(prefix, method) {
+    const presetDiv = document.getElementById(prefix + 'preset_time');
+    const customDiv = document.getElementById(prefix + 'custom_time');
+    
+    if (method === 'preset') {
+        presetDiv.style.display = 'block';
+        customDiv.style.display = 'none';
+        // Clear custom time selections
+        document.getElementById(prefix + 'hour').value = '';
+        document.getElementById(prefix + 'minute').value = '0';
+    } else {
+        presetDiv.style.display = 'none';
+        customDiv.style.display = 'block';
+        // Clear preset selections
+        document.querySelectorAll('#' + prefix + 'preset_time .time-option').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+    }
+    
+    updateSelectedTimeDisplay(prefix);
+}
+
+function selectTime(prefix, hour, minute) {
+    // Clear other selections
+    document.querySelectorAll('#' + prefix + 'preset_time .time-option').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    
+    // Select this time option
+    event.target.closest('.time-option').classList.add('selected');
+    
+    // Update hidden inputs
+    document.getElementById(prefix + 'hour_final').value = hour;
+    document.getElementById(prefix + 'minute_final').value = minute;
+    
+    updateSelectedTimeDisplay(prefix);
+}
+
+function togglePreciseMinute(prefix) {
+    const checkbox = document.getElementById(prefix + 'precise_minute');
+    const input = document.getElementById(prefix + 'precise_minute_value');
+    const select = document.getElementById(prefix + 'minute');
+    
+    if (checkbox.checked) {
+        input.style.display = 'block';
+        select.style.display = 'none';
+        select.value = '';
+    } else {
+        input.style.display = 'none';
+        select.style.display = 'block';
+        input.value = '';
+        select.value = '0';
+    }
+    
+    updateSelectedTimeDisplay(prefix);
+}
+
+function updateSelectedTimeDisplay(prefix) {
+    const display = document.getElementById(prefix + 'selected_time');
+    const badge = display.querySelector('.selected-time-badge');
+    const text = badge.querySelector('.selected-time-text');
+    
+    const dateInput = document.getElementById(prefix + 'date');
+    const hourFinal = document.getElementById(prefix + 'hour_final');
+    const minuteFinal = document.getElementById(prefix + 'minute_final');
+    
+    // Get values from current selection method
+    let hour, minute;
+    
+    const presetSelected = document.querySelector('#' + prefix + 'preset_time .time-option.selected');
+    if (presetSelected) {
+        hour = parseInt(hourFinal.value);
+        minute = parseInt(minuteFinal.value);
+    } else {
+        // Custom time method
+        const hourSelect = document.getElementById(prefix + 'hour');
+        const preciseCheckbox = document.getElementById(prefix + 'precise_minute');
+        
+        if (hourSelect.value) {
+            hour = parseInt(hourSelect.value);
+            
+            if (preciseCheckbox && preciseCheckbox.checked) {
+                const preciseInput = document.getElementById(prefix + 'precise_minute_value');
+                minute = parseInt(preciseInput.value) || 0;
+            } else {
+                const minuteSelect = document.getElementById(prefix + 'minute');
+                minute = parseInt(minuteSelect.value) || 0;
+            }
+            
+            // Update hidden inputs
+            hourFinal.value = hour;
+            minuteFinal.value = minute;
+        }
+    }
+    
+    if (dateInput.value && (hour !== undefined && hour !== '')) {
+        const date = new Date(dateInput.value);
+        const formatOptions = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        };
+        
+        const formattedDate = date.toLocaleDateString('en-US', formatOptions);
+        const time12h = formatTime12Hour(hour, minute);
+        
+        text.textContent = `${formattedDate} at ${time12h}`;
+        badge.classList.remove('no-time');
+    } else {
+        text.textContent = 'No time selected';
+        badge.classList.add('no-time');
+    }
+}
+
+function formatTime12Hour(hour, minute) {
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    const minuteStr = minute.toString().padStart(2, '0');
+    return `${hour12}:${minuteStr} ${period}`;
+}
+
+// Initialize datetime picker when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up event listeners for custom time inputs
+    document.querySelectorAll('[data-datetime-picker]').forEach(picker => {
+        const prefix = picker.querySelector('[name$="date"]').name.replace('date', '');
+        
+        // Hour select change
+        const hourSelect = document.getElementById(prefix + 'hour');
+        if (hourSelect) {
+            hourSelect.addEventListener('change', () => updateSelectedTimeDisplay(prefix));
+        }
+        
+        // Minute select change
+        const minuteSelect = document.getElementById(prefix + 'minute');
+        if (minuteSelect) {
+            minuteSelect.addEventListener('change', () => updateSelectedTimeDisplay(prefix));
+        }
+        
+        // Precise minute input change
+        const preciseInput = document.getElementById(prefix + 'precise_minute_value');
+        if (preciseInput) {
+            preciseInput.addEventListener('input', () => updateSelectedTimeDisplay(prefix));
+        }
+        
+        // Date input change
+        const dateInput = document.getElementById(prefix + 'date');
+        if (dateInput) {
+            dateInput.addEventListener('change', () => updateSelectedTimeDisplay(prefix));
+        }
+        
+        // Initial display update
+        updateSelectedTimeDisplay(prefix);
+    });
+});
+</script>

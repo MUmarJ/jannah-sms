@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}Schedules - {{ app_name }}{% endblock %}
+
+{% block page_title %}⏰ Schedules{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            Create and manage automated message schedules.
+        </p>
+        <a href="/schedules/new" class="btn btn-primary">➕ Create Schedule</a>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Quick Stats -->
+    <div class="grid grid-3" style="margin-bottom: 32px;">
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">⏰</div>
+            <h3 style="margin: 0; font-size: 24px; color: #059669;">{{ stats.active_schedules or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Active Schedules</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">⏸️</div>
+            <h3 style="margin: 0; font-size: 24px; color: #d97706;">{{ stats.paused_schedules or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Paused Schedules</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">📅</div>
+            <h3 style="margin: 0; font-size: 24px; color: #2563eb;">{{ stats.total_executions or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Total Executions</p>
+        </div>
+    </div>
+
+    <!-- Active Schedules -->
+    {% if schedules %}
+        <div class="card" style="margin-bottom: 32px;">
+            <h2 style="margin-bottom: 24px;">📋 All Schedules</h2>
+            
+            <!-- Filters -->
+            <div class="grid grid-2" style="margin-bottom: 24px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="status_filter" class="form-label">Filter by Status</label>
+                    <select id="status_filter" class="form-select">
+                        <option value="">All Schedules</option>
+                        <option value="active">Active</option>
+                        <option value="paused">Paused</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="type_filter" class="form-label">Filter by Type</label>
+                    <select id="type_filter" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="rent_reminder">Rent Reminders</option>
+                        <option value="maintenance_notice">Maintenance</option>
+                        <option value="payment_confirmation">Payment Confirmations</option>
+                        <option value="late_fee_notice">Late Fee Notices</option>
+                        <option value="custom">Custom Messages</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Schedule Name</th>
+                            <th>Type</th>
+                            <th>Frequency</th>
+                            <th>Next Run</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for schedule in schedules %}
+                            <tr data-status="{{ schedule.status }}" data-type="{{ schedule.schedule_type }}">
+                                <td>
+                                    <div style="font-weight: 600; font-size: 18px;">{{ schedule.name }}</div>
+                                    <div style="color: #6b7280; font-size: 16px;">
+                                        Created {{ schedule.created_at | format_datetime("%b %d, %Y") }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="padding: 4px 12px; background: #f3f4f6; border-radius: 12px; font-size: 16px;">
+                                        {% if schedule.schedule_type == 'rent_reminder' %}💰 Rent Reminder
+                                        {% elif schedule.schedule_type == 'maintenance_notice' %}🔧 Maintenance
+                                        {% elif schedule.schedule_type == 'payment_confirmation' %}✅ Payment
+                                        {% elif schedule.schedule_type == 'late_fee_notice' %}⚠️ Late Fee
+                                        {% else %}📝 Custom{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="font-size: 16px;">{{ schedule.schedule_display }}</div>
+                                </td>
+                                <td>
+                                    {% if schedule.next_run and schedule.status == 'active' %}
+                                        <div style="font-weight: 600; font-size: 16px;">
+                                            {{ schedule.next_run | format_datetime }}
+                                        </div>
+                                        <div style="color: #6b7280; font-size: 14px;">
+                                            {{ schedule.next_run | format_datetime("%A") }}
+                                        </div>
+                                    {% else %}
+                                        <span style="color: #9ca3af;">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="status-badge 
+                                        {% if schedule.status == 'active' %}status-active
+                                        {% elif schedule.status == 'paused' %}status-paused
+                                        {% else %}status-inactive{% endif %}">
+                                        {% if schedule.status == 'active' %}✅ Active
+                                        {% elif schedule.status == 'paused' %}⏸️ Paused
+                                        {% else %}⏹️ {{ schedule.status_display }}{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 16px;"
+                                                onclick="viewSchedule({{ schedule.id }})">
+                                            👁️ View
+                                        </button>
+                                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 16px;"
+                                                onclick="editSchedule({{ schedule.id }})">
+                                            ✏️ Edit
+                                        </button>
+                                        {% if schedule.status == 'active' %}
+                                            <button class="btn btn-warning" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="pauseSchedule({{ schedule.id }})">
+                                                ⏸️ Pause
+                                            </button>
+                                        {% elif schedule.status == 'paused' %}
+                                            <button class="btn btn-success" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="resumeSchedule({{ schedule.id }})">
+                                                ▶️ Resume
+                                            </button>
+                                        {% endif %}
+                                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 16px;"
+                                                onclick="runNow({{ schedule.id }})">
+                                            🚀 Run Now
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Executions -->
+        <div class="card">
+            <h2 style="margin-bottom: 24px;">📊 Recent Executions</h2>
+            
+            {% if recent_executions %}
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Schedule</th>
+                                <th>Executed</th>
+                                <th>Recipients</th>
+                                <th>Success Rate</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for execution in recent_executions %}
+                                <tr>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ execution.schedule_name }}</div>
+                                    </td>
+                                    <td>
+                                        {{ execution.executed_at | format_datetime }}
+                                    </td>
+                                    <td>
+                                        <span style="font-weight: 600; font-size: 18px;">{{ execution.total_recipients }}</span>
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span style="font-weight: 600; font-size: 18px; 
+                                                color: {% if execution.success_rate >= 90 %}#059669
+                                                      {% elif execution.success_rate >= 70 %}#d97706
+                                                      {% else %}#dc2626{% endif %};">
+                                                {{ execution.success_rate }}%
+                                            </span>
+                                            <div style="background: #f3f4f6; border-radius: 8px; padding: 4px 8px; font-size: 14px;">
+                                                {{ execution.successful_sends }}/{{ execution.total_recipients }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 16px;"
+                                                onclick="viewExecution({{ execution.id }})">
+                                            📋 Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 32px; color: #6b7280;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                    <p style="font-size: 18px; margin: 0;">No executions yet</p>
+                </div>
+            {% endif %}
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="card" style="text-align: center; padding: 64px;">
+            <div style="font-size: 72px; margin-bottom: 24px;">⏰</div>
+            <h2 style="font-size: 28px; margin-bottom: 16px; color: #374151;">No Schedules Created</h2>
+            <p style="font-size: 18px; margin-bottom: 32px; color: #6b7280;">
+                Create your first automated message schedule to start sending recurring messages to your tenants.
+            </p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <a href="/schedules/new" class="btn btn-primary btn-large">➕ Create Schedule</a>
+                <button class="btn btn-secondary btn-large" onclick="showTemplateExamples()">
+                    💡 View Examples
+                </button>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Quick Actions for Schedules -->
+    {% if schedules %}
+        <div class="card" style="margin-top: 32px;">
+            <h2 style="margin-bottom: 16px;">🚀 Quick Actions</h2>
+            <div class="grid grid-2">
+                <button class="btn btn-success btn-large" onclick="pauseAllSchedules()">
+                    ⏸️ Pause All Schedules
+                </button>
+                <button class="btn btn-primary btn-large" onclick="resumeAllSchedules()">
+                    ▶️ Resume All Schedules
+                </button>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Filter functionality
+function filterSchedules() {
+    const statusFilter = document.getElementById('status_filter').value;
+    const typeFilter = document.getElementById('type_filter').value;
+    const rows = document.querySelectorAll('tbody tr[data-status]');
+    
+    rows.forEach(row => {
+        const matchesStatus = !statusFilter || row.dataset.status === statusFilter;
+        const matchesType = !typeFilter || row.dataset.type === typeFilter;
+        
+        row.style.display = (matchesStatus && matchesType) ? '' : 'none';
+    });
+}
+
+// Add filter event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('status_filter');
+    const typeFilter = document.getElementById('type_filter');
+    
+    if (statusFilter) statusFilter.addEventListener('change', filterSchedules);
+    if (typeFilter) typeFilter.addEventListener('change', filterSchedules);
+});
+
+// View schedule details
+function viewSchedule(scheduleId) {
+    window.location.href = `/schedules/${scheduleId}`;
+}
+
+// Edit schedule
+function editSchedule(scheduleId) {
+    window.location.href = `/schedules/${scheduleId}/edit`;
+}
+
+// Pause schedule
+async function pauseSchedule(scheduleId) {
+    const confirmed = await App.confirm(
+        'Pause this schedule? It will not run until you resume it.',
+        'Pause Schedule'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/schedules/${scheduleId}/pause`, {
+                method: 'POST'
+            });
+            window.showAlert('Schedule paused successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to pause schedule', 'danger');
+        }
+    }
+}
+
+// Resume schedule
+async function resumeSchedule(scheduleId) {
+    const confirmed = await App.confirm(
+        'Resume this schedule? It will start running according to its configured schedule.',
+        'Resume Schedule'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/schedules/${scheduleId}/resume`, {
+                method: 'POST'
+            });
+            window.showAlert('Schedule resumed successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to resume schedule', 'danger');
+        }
+    }
+}
+
+// Run schedule now
+async function runNow(scheduleId) {
+    const confirmed = await App.confirm(
+        'Run this schedule immediately? This will send messages to all matching tenants.',
+        'Run Schedule Now'
+    );
+    
+    if (confirmed) {
+        try {
+            const response = await App.apiCall(`/api/v1/schedules/${scheduleId}/run`, {
+                method: 'POST'
+            });
+            window.showAlert(`Schedule executed successfully. Sent ${response.messages_sent} messages.`, 'success');
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (error) {
+            window.showAlert('Failed to run schedule', 'danger');
+        }
+    }
+}
+
+// View execution details
+async function viewExecution(executionId) {
+    try {
+        const response = await App.apiCall(`/api/v1/schedules/executions/${executionId}`);
+        const execution = response.data;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+        `;
+
+        modal.innerHTML = `
+            <div style="background: white; padding: 32px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
+                <h2 style="margin-bottom: 24px; color: #1f2937;">📊 Execution Details</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                    <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: #2563eb;">${execution.total_recipients}</div>
+                        <div style="color: #6b7280;">Total Recipients</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: #f0fdf4; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: #059669;">${execution.successful_sends}</div>
+                        <div style="color: #6b7280;">Successful</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: #fef2f2; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: #dc2626;">${execution.failed_sends || 0}</div>
+                        <div style="color: #6b7280;">Failed</div>
+                    </div>
+                    <div style="text-align: center; padding: 16px; background: #fef3c7; border-radius: 8px;">
+                        <div style="font-size: 24px; font-weight: 600; color: #d97706;">${execution.success_rate}%</div>
+                        <div style="color: #6b7280;">Success Rate</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <strong style="font-size: 18px;">Schedule:</strong><br>
+                    <span style="font-size: 18px;">${execution.schedule_name}</span>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <strong style="font-size: 18px;">Executed:</strong><br>
+                    <span style="font-size: 18px;">${new Date(execution.executed_at).toLocaleString()}</span>
+                </div>
+                
+                ${execution.conditions ? `
+                    <div style="margin-bottom: 20px;">
+                        <strong style="font-size: 18px;">Conditions:</strong><br>
+                        <div style="background: #f9fafb; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 16px;">
+                            ${JSON.stringify(execution.conditions, null, 2)}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div style="text-align: center;">
+                    <button onclick="document.body.removeChild(this.closest('[style*=\"position: fixed\"]'))" 
+                            class="btn btn-primary">Close</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        };
+        
+    } catch (error) {
+        window.showAlert('Failed to load execution details', 'danger');
+    }
+}
+
+// Pause all schedules
+async function pauseAllSchedules() {
+    const confirmed = await App.confirm(
+        'Pause ALL active schedules? They will not run until you resume them individually or all at once.',
+        'Pause All Schedules'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall('/api/v1/schedules/pause-all', {
+                method: 'POST'
+            });
+            window.showAlert('All schedules paused successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to pause all schedules', 'danger');
+        }
+    }
+}
+
+// Resume all schedules
+async function resumeAllSchedules() {
+    const confirmed = await App.confirm(
+        'Resume ALL paused schedules? They will start running according to their configured schedules.',
+        'Resume All Schedules'
+    );
+    
+    if (confirmed) {
+        try {
+            await App.apiCall('/api/v1/schedules/resume-all', {
+                method: 'POST'
+            });
+            window.showAlert('All schedules resumed successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to resume all schedules', 'danger');
+        }
+    }
+}
+
+// Show template examples
+function showTemplateExamples() {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); z-index: 10000;
+        display: flex; align-items: center; justify-content: center;
+    `;
+
+    modal.innerHTML = `
+        <div style="background: white; padding: 32px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <h2 style="margin-bottom: 24px; color: #1f2937;">💡 Schedule Examples</h2>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #2563eb; margin-bottom: 12px;">📅 Monthly Rent Reminders</h3>
+                <p style="margin-bottom: 8px;"><strong>Schedule:</strong> 1st of every month at 9:00 AM</p>
+                <p style="margin-bottom: 8px;"><strong>Conditions:</strong> Send to tenants who haven't paid rent</p>
+                <p style="margin-bottom: 16px;"><strong>Message:</strong> "Dear {name}, this is a friendly reminder that your rent is due. Please submit payment to avoid late fees."</p>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #059669; margin-bottom: 12px;">⚠️ Late Fee Notices</h3>
+                <p style="margin-bottom: 8px;"><strong>Schedule:</strong> 5th of every month at 10:00 AM</p>
+                <p style="margin-bottom: 8px;"><strong>Conditions:</strong> Send to tenants with unpaid rent</p>
+                <p style="margin-bottom: 16px;"><strong>Message:</strong> "Dear {name}, your rent is now overdue. A late fee has been applied. Please contact us immediately."</p>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="color: #d97706; margin-bottom: 12px;">🔧 Maintenance Notifications</h3>
+                <p style="margin-bottom: 8px;"><strong>Schedule:</strong> As needed (one-time or recurring)</p>
+                <p style="margin-bottom: 8px;"><strong>Conditions:</strong> Send to all tenants or specific units</p>
+                <p style="margin-bottom: 16px;"><strong>Message:</strong> "Dear {name}, we will be performing maintenance on {date}. Please ensure access to your unit."</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 32px;">
+                <a href="/schedules/new" class="btn btn-primary" style="margin-right: 12px;">➕ Create Schedule</a>
+                <button onclick="document.body.removeChild(this.closest('[style*=\"position: fixed\"]'))" 
+                        class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    };
+}
+
+// Auto-refresh every 30 seconds for next run times
+setInterval(function() {
+    const nextRunCells = document.querySelectorAll('td:nth-child(4)');
+    // In a real app, you'd fetch updated data and update the times
+    console.log('Auto-refreshing schedule times...');
+}, 30000);
+</script>
+{% endblock %}
