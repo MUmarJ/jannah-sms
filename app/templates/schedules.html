@@ -37,7 +37,7 @@
     {% if schedules %}
         <div class="card" style="margin-bottom: 32px;">
             <h2 style="margin-bottom: 24px;">📋 All Schedules</h2>
-            
+
             <!-- Filters -->
             <div class="grid grid-2" style="margin-bottom: 24px;">
                 <div class="form-group" style="margin-bottom: 0;">
@@ -108,7 +108,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <span class="status-badge 
+                                    <span class="status-badge
                                         {% if schedule.status == 'active' %}status-active
                                         {% elif schedule.status == 'paused' %}status-paused
                                         {% else %}status-inactive{% endif %}">
@@ -154,7 +154,7 @@
         <!-- Recent Executions -->
         <div class="card">
             <h2 style="margin-bottom: 24px;">📊 Recent Executions</h2>
-            
+
             {% if recent_executions %}
                 <div class="table-container">
                     <table class="table">
@@ -181,7 +181,7 @@
                                     </td>
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 8px;">
-                                            <span style="font-weight: 600; font-size: 18px; 
+                                            <span style="font-weight: 600; font-size: 18px;
                                                 color: {% if execution.success_rate >= 90 %}#059669
                                                       {% elif execution.success_rate >= 70 %}#d97706
                                                       {% else %}#dc2626{% endif %};">
@@ -251,11 +251,11 @@ function filterSchedules() {
     const statusFilter = document.getElementById('status_filter').value;
     const typeFilter = document.getElementById('type_filter').value;
     const rows = document.querySelectorAll('tbody tr[data-status]');
-    
+
     rows.forEach(row => {
         const matchesStatus = !statusFilter || row.dataset.status === statusFilter;
         const matchesType = !typeFilter || row.dataset.type === typeFilter;
-        
+
         row.style.display = (matchesStatus && matchesType) ? '' : 'none';
     });
 }
@@ -264,7 +264,7 @@ function filterSchedules() {
 document.addEventListener('DOMContentLoaded', function() {
     const statusFilter = document.getElementById('status_filter');
     const typeFilter = document.getElementById('type_filter');
-    
+
     if (statusFilter) statusFilter.addEventListener('change', filterSchedules);
     if (typeFilter) typeFilter.addEventListener('change', filterSchedules);
 });
@@ -285,7 +285,7 @@ async function pauseSchedule(scheduleId) {
         'Pause this schedule? It will not run until you resume it.',
         'Pause Schedule'
     );
-    
+
     if (confirmed) {
         try {
             await App.apiCall(`/api/v1/schedules/${scheduleId}/pause`, {
@@ -305,7 +305,7 @@ async function resumeSchedule(scheduleId) {
         'Resume this schedule? It will start running according to its configured schedule.',
         'Resume Schedule'
     );
-    
+
     if (confirmed) {
         try {
             await App.apiCall(`/api/v1/schedules/${scheduleId}/resume`, {
@@ -325,7 +325,7 @@ async function runNow(scheduleId) {
         'Run this schedule immediately? This will send messages to all matching tenants.',
         'Run Schedule Now'
     );
-    
+
     if (confirmed) {
         try {
             const response = await App.apiCall(`/api/v1/schedules/${scheduleId}/run`, {
@@ -344,7 +344,7 @@ async function viewExecution(executionId) {
     try {
         const response = await App.apiCall(`/api/v1/schedules/executions/${executionId}`);
         const execution = response.data;
-        
+
         const modal = document.createElement('div');
         modal.style.cssText = `
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -355,7 +355,7 @@ async function viewExecution(executionId) {
         modal.innerHTML = `
             <div style="background: white; padding: 32px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto;">
                 <h2 style="margin-bottom: 24px; color: #1f2937;">📊 Execution Details</h2>
-                
+
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
                     <div style="text-align: center; padding: 16px; background: #f9fafb; border-radius: 8px;">
                         <div style="font-size: 24px; font-weight: 600; color: #2563eb;">${execution.total_recipients}</div>
@@ -374,17 +374,17 @@ async function viewExecution(executionId) {
                         <div style="color: #6b7280;">Success Rate</div>
                     </div>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <strong style="font-size: 18px;">Schedule:</strong><br>
                     <span style="font-size: 18px;">${execution.schedule_name}</span>
                 </div>
-                
+
                 <div style="margin-bottom: 20px;">
                     <strong style="font-size: 18px;">Executed:</strong><br>
                     <span style="font-size: 18px;">${new Date(execution.executed_at).toLocaleString()}</span>
                 </div>
-                
+
                 ${execution.conditions ? `
                     <div style="margin-bottom: 20px;">
                         <strong style="font-size: 18px;">Conditions:</strong><br>
@@ -393,22 +393,22 @@ async function viewExecution(executionId) {
                         </div>
                     </div>
                 ` : ''}
-                
+
                 <div style="text-align: center;">
-                    <button onclick="document.body.removeChild(this.closest('[style*=\"position: fixed\"]'))" 
+                    <button onclick="document.body.removeChild(this.closest('[style*=\"position: fixed\"]'))"
                             class="btn btn-primary">Close</button>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
-        
+
         modal.onclick = (e) => {
             if (e.target === modal) {
                 document.body.removeChild(modal);
             }
         };
-        
+
     } catch (error) {
         window.showAlert('Failed to load execution details', 'danger');
     }
@@ -420,7 +420,7 @@ async function pauseAllSchedules() {
         'Pause ALL active schedules? They will not run until you resume them individually or all at once.',
         'Pause All Schedules'
     );
-    
+
     if (confirmed) {
         try {
             await App.apiCall('/api/v1/schedules/pause-all', {
@@ -440,7 +440,7 @@ async function resumeAllSchedules() {
         'Resume ALL paused schedules? They will start running according to their configured schedules.',
         'Resume All Schedules'
     );
-    
+
     if (confirmed) {
         try {
             await App.apiCall('/api/v1/schedules/resume-all', {
@@ -466,38 +466,38 @@ function showTemplateExamples() {
     modal.innerHTML = `
         <div style="background: white; padding: 32px; border-radius: 12px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;">
             <h2 style="margin-bottom: 24px; color: #1f2937;">💡 Schedule Examples</h2>
-            
+
             <div style="margin-bottom: 24px;">
                 <h3 style="color: #2563eb; margin-bottom: 12px;">📅 Monthly Rent Reminders</h3>
                 <p style="margin-bottom: 8px;"><strong>Schedule:</strong> 1st of every month at 9:00 AM</p>
                 <p style="margin-bottom: 8px;"><strong>Conditions:</strong> Send to tenants who haven't paid rent</p>
                 <p style="margin-bottom: 16px;"><strong>Message:</strong> "Dear {name}, this is a friendly reminder that your rent is due. Please submit payment to avoid late fees."</p>
             </div>
-            
+
             <div style="margin-bottom: 24px;">
                 <h3 style="color: #059669; margin-bottom: 12px;">⚠️ Late Fee Notices</h3>
                 <p style="margin-bottom: 8px;"><strong>Schedule:</strong> 5th of every month at 10:00 AM</p>
                 <p style="margin-bottom: 8px;"><strong>Conditions:</strong> Send to tenants with unpaid rent</p>
                 <p style="margin-bottom: 16px;"><strong>Message:</strong> "Dear {name}, your rent is now overdue. A late fee has been applied. Please contact us immediately."</p>
             </div>
-            
+
             <div style="margin-bottom: 24px;">
                 <h3 style="color: #d97706; margin-bottom: 12px;">🔧 Maintenance Notifications</h3>
                 <p style="margin-bottom: 8px;"><strong>Schedule:</strong> As needed (one-time or recurring)</p>
                 <p style="margin-bottom: 8px;"><strong>Conditions:</strong> Send to all tenants or specific units</p>
                 <p style="margin-bottom: 16px;"><strong>Message:</strong> "Dear {name}, we will be performing maintenance on {date}. Please ensure access to your unit."</p>
             </div>
-            
+
             <div style="text-align: center; margin-top: 32px;">
                 <a href="/schedules/new" class="btn btn-primary" style="margin-right: 12px;">➕ Create Schedule</a>
-                <button onclick="document.body.removeChild(this.closest('[style*=\"position: fixed\"]'))" 
+                <button onclick="document.body.removeChild(this.closest('[style*=\"position: fixed\"]'))"
                         class="btn btn-secondary">Close</button>
             </div>
         </div>
     `;
 
     document.body.appendChild(modal);
-    
+
     modal.onclick = (e) => {
         if (e.target === modal) {
             document.body.removeChild(modal);

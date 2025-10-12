@@ -43,7 +43,7 @@ python -c "
 try:
     from app.core.database import SessionLocal
     from app.models.tenant import Tenant
-    
+
     with SessionLocal() as db:
         count = db.query(Tenant).count()
         print(f'Database OK - {count} tenants found')

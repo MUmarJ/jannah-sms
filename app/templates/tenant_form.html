@@ -23,36 +23,36 @@
 
 {% block content %}
     <div class="card">
-        <form method="post" 
+        <form method="post"
               action="{% if action == 'add' %}/tenants/add{% else %}/tenants/{{ tenant.id }}/edit{% endif %}"
               data-validate>
-            
+
             <!-- Basic Information -->
             <div style="margin-bottom: 32px;">
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     📋 Basic Information
                 </h2>
-                
+
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label for="name" class="form-label">Full Name *</label>
-                        <input type="text" 
-                               id="name" 
-                               name="name" 
-                               class="form-input" 
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               class="form-input"
                                value="{% if tenant %}{{ tenant.name }}{% endif %}"
                                required
                                placeholder="Enter tenant's full name">
                         <div class="form-help">The tenant's complete legal name</div>
                         <div class="form-error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" 
-                               id="email" 
-                               name="email" 
-                               class="form-input" 
+                        <input type="email"
+                               id="email"
+                               name="email"
+                               class="form-input"
                                value="{% if tenant %}{{ tenant.email or '' }}{% endif %}"
                                placeholder="tenant@example.com">
                         <div class="form-help">Optional email for notifications</div>
@@ -66,27 +66,27 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     📞 Contact Information
                 </h2>
-                
+
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label for="phone" class="form-label">Phone Number *</label>
-                        <input type="tel" 
-                               id="phone" 
-                               name="phone" 
-                               class="form-input" 
+                        <input type="tel"
+                               id="phone"
+                               name="phone"
+                               class="form-input"
                                value="{% if tenant %}{{ tenant.phone }}{% endif %}"
                                required
                                placeholder="(555) 123-4567">
                         <div class="form-help">Primary contact number</div>
                         <div class="form-error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="emergency_contact" class="form-label">Emergency Contact</label>
-                        <input type="tel" 
-                               id="emergency_contact" 
-                               name="emergency_contact" 
-                               class="form-input" 
+                        <input type="tel"
+                               id="emergency_contact"
+                               name="emergency_contact"
+                               class="form-input"
                                value="{% if tenant %}{{ tenant.emergency_contact or '' }}{% endif %}"
                                placeholder="(555) 987-6543">
                         <div class="form-help">Emergency contact phone number</div>
@@ -100,26 +100,26 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     🏢 Property Information
                 </h2>
-                
+
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label for="unit_number" class="form-label">Unit/Apartment Number</label>
-                        <input type="text" 
-                               id="unit_number" 
-                               name="unit_number" 
-                               class="form-input" 
+                        <input type="text"
+                               id="unit_number"
+                               name="unit_number"
+                               class="form-input"
                                value="{% if tenant %}{{ tenant.unit_number or '' }}{% endif %}"
                                placeholder="Unit 101, Apt A, etc.">
                         <div class="form-help">Unit, apartment, or room identifier</div>
                         <div class="form-error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="rent_amount" class="form-label">Monthly Rent ($)</label>
-                        <input type="number" 
-                               id="rent_amount" 
-                               name="rent_amount" 
-                               class="form-input" 
+                        <input type="number"
+                               id="rent_amount"
+                               name="rent_amount"
+                               class="form-input"
                                value="{% if tenant %}{{ tenant.rent_amount or '' }}{% endif %}"
                                min="0"
                                step="0.01"
@@ -135,25 +135,25 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     📄 Lease Information
                 </h2>
-                
+
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label for="lease_start_date" class="form-label">Lease Start Date</label>
-                        <input type="date" 
-                               id="lease_start_date" 
-                               name="lease_start_date" 
-                               class="form-input" 
+                        <input type="date"
+                               id="lease_start_date"
+                               name="lease_start_date"
+                               class="form-input"
                                value="{% if tenant and tenant.lease_start_date %}{{ tenant.lease_start_date.strftime('%Y-%m-%d') }}{% endif %}">
                         <div class="form-help">When the lease begins</div>
                         <div class="form-error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="lease_end_date" class="form-label">Lease End Date</label>
-                        <input type="date" 
-                               id="lease_end_date" 
-                               name="lease_end_date" 
-                               class="form-input" 
+                        <input type="date"
+                               id="lease_end_date"
+                               name="lease_end_date"
+                               class="form-input"
                                value="{% if tenant and tenant.lease_end_date %}{{ tenant.lease_end_date.strftime('%Y-%m-%d') }}{% endif %}">
                         <div class="form-help">When the lease expires</div>
                         <div class="form-error"></div>
@@ -166,12 +166,12 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     📝 Additional Information
                 </h2>
-                
+
                 <div class="form-group">
                     <label for="notes" class="form-label">Notes</label>
-                    <textarea id="notes" 
-                              name="notes" 
-                              class="form-textarea" 
+                    <textarea id="notes"
+                              name="notes"
+                              class="form-textarea"
                               rows="4"
                               placeholder="Any additional notes about this tenant...">{% if tenant %}{{ tenant.notes or '' }}{% endif %}</textarea>
                     <div class="form-help">Any additional information about the tenant</div>
@@ -202,34 +202,34 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form[data-validate]');
     if (!form) return;
-    
+
     // Phone number formatting
     const phoneInputs = document.querySelectorAll('input[type="tel"]');
     phoneInputs.forEach(input => {
         input.addEventListener('input', function() {
             let value = this.value.replace(/\D/g, '');
-            
+
             if (value.length >= 6) {
                 value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
             } else if (value.length >= 3) {
                 value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
             }
-            
+
             this.value = value;
         });
     });
-    
+
     // Form submission validation
     form.addEventListener('submit', function(e) {
         const nameInput = document.getElementById('name');
         const phoneInput = document.getElementById('phone');
-        
+
         let isValid = true;
-        
+
         // Clear previous errors
         document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
         document.querySelectorAll('.form-input').forEach(el => el.classList.remove('error'));
-        
+
         // Validate name
         if (!nameInput.value.trim()) {
             showError(nameInput, 'Name is required');
@@ -238,7 +238,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showError(nameInput, 'Name must be at least 2 characters');
             isValid = false;
         }
-        
+
         // Validate phone
         const phoneDigits = phoneInput.value.replace(/\D/g, '');
         if (!phoneDigits) {
@@ -248,12 +248,12 @@ document.addEventListener('DOMContentLoaded', function() {
             showError(phoneInput, 'Phone number must be at least 10 digits');
             isValid = false;
         }
-        
+
         if (!isValid) {
             e.preventDefault();
         }
     });
-    
+
     function showError(input, message) {
         input.classList.add('error');
         const errorDiv = input.parentNode.querySelector('.form-error');

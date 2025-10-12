@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   jannah-sms:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     container_name: jannah-sms-app
@@ -19,35 +19,35 @@ services:
       - DATABASE_URL=sqlite:///./jannah_sms.db
       - DEBUG=false
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
-      
+
       # Company settings
       - COMPANY_NAME=${COMPANY_NAME:-Jannah Property Management}
       - APP_NAME=${APP_NAME:-Jannah SMS Admin}
-      
+
       # SMS API settings (from .env file)
       - SMS_API_KEY=${SMS_API_KEY}
       - SMS_API_BASE=https://textbelt.com/text
-      
+
       # Security settings
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=60
       - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
-      
+
       # Elderly-friendly UI settings
       - UI_LARGE_FONTS=true
       - UI_HIGH_CONTRAST=true
       - UI_SIMPLE_NAVIGATION=true
-    
+
     restart: unless-stopped
-    
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    
+
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jannah-sms.rule=Host(`sms.yourdomain.com`)"

@@ -44,21 +44,21 @@
         <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
             📤 Upload CSV File
         </h2>
-        
+
         <form method="post" action="/tenants/import" enctype="multipart/form-data" data-validate>
             <div class="form-group">
                 <label for="file" class="form-label">Select CSV File</label>
-                <input type="file" 
-                       id="file" 
-                       name="file" 
-                       class="form-input" 
-                       accept=".csv" 
+                <input type="file"
+                       id="file"
+                       name="file"
+                       class="form-input"
+                       accept=".csv"
                        required
                        style="padding: 16px; font-size: 18px;">
                 <div class="form-help">Choose a CSV file with tenant information</div>
                 <div class="form-error"></div>
             </div>
-            
+
             <div class="form-group">
                 <label class="form-checkbox">
                     <input type="checkbox" name="overwrite_existing" value="true">
@@ -98,7 +98,7 @@
 John Smith,555-0123,1200,1st of month,Building A - Unit 101,Excellent tenant
 Jane Doe,555-0456,1500,5th of month,Building B - Unit 205,New tenant
 Mike Johnson,555-0789,1100,15th of month,Building A - Unit 103,`;
-            
+
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             if (link.download !== undefined) {

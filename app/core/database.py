@@ -2,10 +2,11 @@
 Database configuration and connection management.
 """
 
-from sqlalchemy import create_engine, MetaData
+import os
+
+from sqlalchemy import MetaData, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
 
 from app.core.config import settings
 
@@ -50,8 +51,8 @@ def init_db():
     Creates all tables defined in models.
     """
     # Import all models to ensure they are registered with SQLAlchemy
-    from app.models import tenant, schedule, message, user  # noqa
-    
+    from app.models import message, schedule, tenant, user  # noqa
+
     # Create all tables
     Base.metadata.create_all(bind=engine)
     print(f"✅ Database initialized at: {settings.database_url}")

@@ -3,11 +3,11 @@ Schedule models - SQLAlchemy and Pydantic schemas for SMS scheduling.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 from enum import Enum
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON
+from typing import Any, Optional
+
 from pydantic import BaseModel, validator
-import json
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
 
 from app.core.database import Base
 
@@ -81,8 +81,8 @@ class ScheduleBase(BaseModel):
     message_template: str
     schedule_type: ScheduleType
     schedule_value: str
-    conditions: Optional[Dict[str, Any]] = None
-    target_tenant_types: Optional[List[str]] = None
+    conditions: Optional[dict[str, Any]] = None
+    target_tenant_types: Optional[list[str]] = None
     status: ScheduleStatus = ScheduleStatus.ACTIVE
 
     @validator("name")
@@ -109,10 +109,10 @@ class ScheduleBase(BaseModel):
             try:
                 time_parts = v.split(":")
                 if len(time_parts) != 2:
-                    raise ValueError()
+                    raise ValueError
                 hour, minute = int(time_parts[0]), int(time_parts[1])
                 if not (0 <= hour <= 23) or not (0 <= minute <= 59):
-                    raise ValueError()
+                    raise ValueError
             except (ValueError, AttributeError):
                 raise ValueError(
                     'Daily schedule must be in format "HH:MM" (e.g., "09:30")'
@@ -123,7 +123,7 @@ class ScheduleBase(BaseModel):
             try:
                 parts = v.split()
                 if len(parts) != 2:
-                    raise ValueError()
+                    raise ValueError
                 day, time = parts[0].lower(), parts[1]
 
                 valid_days = [
@@ -136,14 +136,14 @@ class ScheduleBase(BaseModel):
                     "sunday",
                 ]
                 if day not in valid_days:
-                    raise ValueError()
+                    raise ValueError
 
                 time_parts = time.split(":")
                 if len(time_parts) != 2:
-                    raise ValueError()
+                    raise ValueError
                 hour, minute = int(time_parts[0]), int(time_parts[1])
                 if not (0 <= hour <= 23) or not (0 <= minute <= 59):
-                    raise ValueError()
+                    raise ValueError
             except (ValueError, AttributeError):
                 raise ValueError(
                     'Weekly schedule must be in format "DAYNAME HH:MM" (e.g., "monday 09:30")'
@@ -154,18 +154,18 @@ class ScheduleBase(BaseModel):
             try:
                 parts = v.split()
                 if len(parts) != 2:
-                    raise ValueError()
+                    raise ValueError
                 day, time = int(parts[0]), parts[1]
 
                 if not (1 <= day <= 31):
-                    raise ValueError()
+                    raise ValueError
 
                 time_parts = time.split(":")
                 if len(time_parts) != 2:
-                    raise ValueError()
+                    raise ValueError
                 hour, minute = int(time_parts[0]), int(time_parts[1])
                 if not (0 <= hour <= 23) or not (0 <= minute <= 59):
-                    raise ValueError()
+                    raise ValueError
             except (ValueError, AttributeError):
                 raise ValueError(
                     'Monthly schedule must be in format "DD HH:MM" (e.g., "5 14:30")'
@@ -203,8 +203,6 @@ class ScheduleBase(BaseModel):
 class ScheduleCreate(ScheduleBase):
     """Schema for creating a new schedule."""
 
-    pass
-
 
 class ScheduleUpdate(BaseModel):
     """Schema for updating a schedule."""
@@ -213,8 +211,8 @@ class ScheduleUpdate(BaseModel):
     message_template: Optional[str] = None
     schedule_type: Optional[ScheduleType] = None
     schedule_value: Optional[str] = None
-    conditions: Optional[Dict[str, Any]] = None
-    target_tenant_types: Optional[List[str]] = None
+    conditions: Optional[dict[str, Any]] = None
+    target_tenant_types: Optional[list[str]] = None
     status: Optional[ScheduleStatus] = None
 
 
@@ -282,7 +280,7 @@ class ScheduleResponse(ScheduleInDB):
 class ScheduleBulkAction(BaseModel):
     """Schema for bulk schedule actions."""
 
-    schedule_ids: List[int]
+    schedule_ids: list[int]
     action: str  # 'activate', 'pause', 'disable', 'delete'
 
     @validator("action")
@@ -303,9 +301,9 @@ class ScheduleExecution(BaseModel):
     tenant_count: int
     success_count: int
     failure_count: int
-    messages_sent: List[str]  # List of tenant names who received messages
-    errors: List[str]  # List of error messages
-    conditions_checked: Optional[Dict[str, Any]] = None
+    messages_sent: list[str]  # List of tenant names who received messages
+    errors: list[str]  # List of error messages
+    conditions_checked: Optional[dict[str, Any]] = None
 
 
 class ScheduleStats(BaseModel):
@@ -317,5 +315,5 @@ class ScheduleStats(BaseModel):
     total_executions: int
 
 
-# Schema alias for API compatibility  
+# Schema alias for API compatibility
 Schedule = ScheduleDB

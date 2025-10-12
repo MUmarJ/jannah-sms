@@ -4,11 +4,12 @@ Tenant models - SQLAlchemy and Pydantic schemas.
 
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Date
+
 from pydantic import BaseModel, validator
-import re
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
 
 from app.core.database import Base
+from app.utils import format_phone, normalize_phone
 
 
 # SQLAlchemy Model
@@ -31,36 +32,45 @@ class TenantDB(Base):
     last_payment_date = Column(DateTime, nullable=True)
     late_fee_applicable = Column(Boolean, default=False)
 
+    # SMS opt-in tracking for A2P compliance
+    sms_opt_in_status = Column(
+        String(20), default="pending"
+    )  # pending, opted_in, opted_out
+    sms_opt_in_date = Column(DateTime, nullable=True)
+    sms_opt_out_date = Column(DateTime, nullable=True)
+    initial_opt_in_message_sent = Column(Boolean, default=False)
+    initial_opt_in_sent_date = Column(DateTime, nullable=True)
+
     # Additional metadata
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Properties for web form compatibility
     @property
     def email(self):
         return None
-        
+
     @property
     def phone(self):
         return self.contact
-        
+
     @property
     def unit_number(self):
         return self.building
-        
+
     @property
     def rent_amount(self):
         return self.rent
-        
+
     @property
     def emergency_contact(self):
         return None
-        
+
     @property
     def lease_start_date(self):
         return None
-        
+
     @property
     def lease_end_date(self):
         return None
@@ -82,14 +92,14 @@ class TenantBase(BaseModel):
     active: bool = True
     is_current_month_rent_paid: bool = False
     late_fee_applicable: bool = False
+    sms_opt_in_status: str = "pending"  # pending, opted_in, opted_out
     notes: Optional[str] = None
 
     @validator("contact")
     def validate_contact(cls, v):
         """Validate contact number format."""
         if v:
-            # Remove any non-digit characters
-            cleaned = re.sub(r"[^0-9]", "", v)
+            cleaned = normalize_phone(v)
             if len(cleaned) < 10:
                 raise ValueError("Contact number must be at least 10 digits")
         return v
@@ -113,8 +123,6 @@ class TenantBase(BaseModel):
 class TenantCreate(TenantBase):
     """Schema for creating a new tenant."""
 
-    pass
-
 
 class TenantUpdate(BaseModel):
     """Schema for updating a tenant."""
@@ -128,14 +136,14 @@ class TenantUpdate(BaseModel):
     active: Optional[bool] = None
     is_current_month_rent_paid: Optional[bool] = None
     late_fee_applicable: Optional[bool] = None
+    sms_opt_in_status: Optional[str] = None
     notes: Optional[str] = None
 
     @validator("contact", pre=True, always=True)
     def validate_contact(cls, v):
         """Validate contact number format."""
         if v:
-            # Remove any non-digit characters
-            cleaned = re.sub(r"[^0-9]", "", v)
+            cleaned = normalize_phone(v)
             if len(cleaned) < 10:
                 raise ValueError("Contact number must be at least 10 digits")
         return v
@@ -163,14 +171,7 @@ class TenantResponse(TenantInDB):
     @property
     def formatted_contact(self) -> str:
         """Format contact number for display."""
-        if self.contact:
-            # Format as (XXX) XXX-XXXX
-            cleaned = re.sub(r"[^0-9]", "", self.contact)
-            if len(cleaned) == 10:
-                return f"({cleaned[:3]}) {cleaned[3:6]}-{cleaned[6:]}"
-            elif len(cleaned) == 11 and cleaned[0] == "1":
-                return f"+1 ({cleaned[1:4]}) {cleaned[4:7]}-{cleaned[7:]}"
-        return self.contact
+        return format_phone(self.contact) if self.contact else ""
 
     @property
     def display_name(self) -> str:

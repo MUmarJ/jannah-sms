@@ -5,18 +5,18 @@ Jannah SMS Admin - Modern SMS scheduling system for property management.
 
 from contextlib import asynccontextmanager
 from datetime import datetime
+
+import uvicorn
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-import uvicorn
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.database import init_db
 from app.core.templates import templates
 from app.services.scheduler_service import scheduler_service
-from app.services.sms_service import sms_service
 
 
 # Application lifespan management

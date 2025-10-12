@@ -3,21 +3,21 @@ Tenants API endpoints for managing tenant information and payment status.
 """
 
 import logging
-from datetime import datetime, date
-from dateutil.relativedelta import relativedelta
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from datetime import datetime
+from typing import Optional
+
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.tenant import (
     Tenant,
     TenantCreate,
-    TenantUpdate,
     TenantResponse,
     TenantStats,
+    TenantUpdate,
 )
-
+from app.services.sms_service import sms_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -48,13 +48,13 @@ async def get_tenant_stats(db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        logger.error(f"Failed to get tenant stats: {str(e)}")
+        logger.error(f"Failed to get tenant stats: {e!s}")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve tenant statistics"
         )
 
 
-@router.get("/", response_model=List[TenantResponse])
+@router.get("/", response_model=list[TenantResponse])
 async def get_tenants(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -71,8 +71,7 @@ async def get_tenants(
         if search:
             search_term = f"%{search}%"
             query = query.filter(
-                Tenant.name.ilike(search_term)
-                | Tenant.contact.ilike(search_term)
+                Tenant.name.ilike(search_term) | Tenant.contact.ilike(search_term)
             )
 
         # Payment status filter
@@ -95,7 +94,7 @@ async def get_tenants(
         return tenants
 
     except Exception as e:
-        logger.error(f"Failed to get tenants: {str(e)}")
+        logger.error(f"Failed to get tenants: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to retrieve tenants")
 
 
@@ -103,9 +102,10 @@ async def get_tenants(
 async def export_tenants(db: Session = Depends(get_db)):
     """Export tenants to CSV file."""
     try:
-        from fastapi.responses import StreamingResponse
-        from io import StringIO
         import csv
+        from io import StringIO
+
+        from fastapi.responses import StreamingResponse
 
         tenants = (
             db.query(Tenant).filter(Tenant.active == True).order_by(Tenant.name).all()
@@ -114,15 +114,25 @@ async def export_tenants(db: Session = Depends(get_db)):
         # Create CSV content
         output = StringIO()
         writer = csv.writer(output)
-        
+
         # Write headers
         headers = [
-            "Name", "Email", "Phone", "Unit", "Rent Amount", "Emergency Contact",
-            "Lease Start", "Lease End", "Tenant Type", "Rent Paid", "Last Payment", 
-            "Late Fee", "Notes"
+            "Name",
+            "Email",
+            "Phone",
+            "Unit",
+            "Rent Amount",
+            "Emergency Contact",
+            "Lease Start",
+            "Lease End",
+            "Tenant Type",
+            "Rent Paid",
+            "Last Payment",
+            "Late Fee",
+            "Notes",
         ]
         writer.writerow(headers)
-        
+
         # Write tenant data
         for tenant in tenants:
             row = [
@@ -136,7 +146,11 @@ async def export_tenants(db: Session = Depends(get_db)):
                 "",  # No lease_end_date field in current schema
                 tenant.tenant_type,
                 "Yes" if tenant.is_current_month_rent_paid else "No",
-                tenant.last_payment_date.strftime("%Y-%m-%d") if tenant.last_payment_date else "",
+                (
+                    tenant.last_payment_date.strftime("%Y-%m-%d")
+                    if tenant.last_payment_date
+                    else ""
+                ),
                 "Yes" if tenant.late_fee_applicable else "No",
                 tenant.notes or "",
             ]
@@ -153,7 +167,7 @@ async def export_tenants(db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        logger.error(f"Failed to export tenants: {str(e)}")
+        logger.error(f"Failed to export tenants: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to export tenants")
 
 
@@ -199,7 +213,7 @@ async def create_tenant(tenant_data: TenantCreate, db: Session = Depends(get_db)
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to create tenant: {str(e)}")
+        logger.error(f"Failed to create tenant: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to create tenant")
 
 
@@ -242,7 +256,7 @@ async def update_tenant(
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to update tenant {tenant_id}: {str(e)}")
+        logger.error(f"Failed to update tenant {tenant_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to update tenant")
 
 
@@ -266,7 +280,7 @@ async def delete_tenant(tenant_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to delete tenant {tenant_id}: {str(e)}")
+        logger.error(f"Failed to delete tenant {tenant_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to delete tenant")
 
 
@@ -292,7 +306,7 @@ async def mark_tenant_paid(tenant_id: int, db: Session = Depends(get_db)):
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to mark tenant {tenant_id} as paid: {str(e)}")
+        logger.error(f"Failed to mark tenant {tenant_id} as paid: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to mark tenant as paid")
 
 
@@ -320,7 +334,7 @@ async def mark_all_tenants_paid(db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to mark all tenants as paid: {str(e)}")
+        logger.error(f"Failed to mark all tenants as paid: {e!s}")
         raise HTTPException(
             status_code=500, detail="Failed to mark all tenants as paid"
         )
@@ -349,7 +363,7 @@ async def reset_monthly_payment_status(db: Session = Depends(get_db)):
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to reset monthly payment status: {str(e)}")
+        logger.error(f"Failed to reset monthly payment status: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to reset payment status")
 
 
@@ -377,11 +391,11 @@ async def apply_late_fees(days_overdue: int = Query(5), db: Session = Depends(ge
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to apply late fees: {str(e)}")
+        logger.error(f"Failed to apply late fees: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to apply late fees")
 
 
-@router.get("/unpaid/list", response_model=List[TenantResponse])
+@router.get("/unpaid/list", response_model=list[TenantResponse])
 async def get_unpaid_tenants(db: Session = Depends(get_db)):
     """Get list of tenants who haven't paid rent."""
     try:
@@ -395,11 +409,11 @@ async def get_unpaid_tenants(db: Session = Depends(get_db)):
         return tenants
 
     except Exception as e:
-        logger.error(f"Failed to get unpaid tenants: {str(e)}")
+        logger.error(f"Failed to get unpaid tenants: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get unpaid tenants")
 
 
-@router.get("/late-fees/list", response_model=List[TenantResponse])
+@router.get("/late-fees/list", response_model=list[TenantResponse])
 async def get_late_fee_tenants(db: Session = Depends(get_db)):
     """Get list of tenants with late fees."""
     try:
@@ -413,7 +427,7 @@ async def get_late_fee_tenants(db: Session = Depends(get_db)):
         return tenants
 
     except Exception as e:
-        logger.error(f"Failed to get late fee tenants: {str(e)}")
+        logger.error(f"Failed to get late fee tenants: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get late fee tenants")
 
 
@@ -424,8 +438,9 @@ async def import_tenants(file: UploadFile = File(...), db: Session = Depends(get
         if not file.filename.endswith(".csv"):
             raise HTTPException(status_code=400, detail="File must be a CSV")
 
-        import pandas as pd
         from io import StringIO
+
+        import pandas as pd
 
         # Read CSV content
         content = await file.read()
@@ -448,7 +463,9 @@ async def import_tenants(file: UploadFile = File(...), db: Session = Depends(get
             try:
                 # Check if tenant already exists
                 existing_tenant = (
-                    db.query(Tenant).filter(Tenant.contact == str(row["Contact"])).first()
+                    db.query(Tenant)
+                    .filter(Tenant.contact == str(row["Contact"]))
+                    .first()
                 )
 
                 if existing_tenant:
@@ -471,7 +488,7 @@ async def import_tenants(file: UploadFile = File(...), db: Session = Depends(get
                 imported_count += 1
 
             except Exception as e:
-                errors.append(f"Row {index + 2}: {str(e)}")
+                errors.append(f"Row {index + 2}: {e!s}")
 
         if imported_count > 0:
             db.commit()
@@ -488,7 +505,183 @@ async def import_tenants(file: UploadFile = File(...), db: Session = Depends(get
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to import tenants: {str(e)}")
+        logger.error(f"Failed to import tenants: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to import tenants")
 
 
+@router.post("/send-opt-in-requests")
+async def send_opt_in_requests(
+    tenant_ids: Optional[list[int]] = None,
+    test_mode: bool = Query(True, description="Use test mode for SMS"),
+    db: Session = Depends(get_db),
+):
+    """
+    Send opt-in request messages to tenants for A2P compliance.
+    If tenant_ids not provided, sends to all tenants with 'pending' status.
+    """
+    try:
+        # Build query for tenants
+        query = db.query(Tenant).filter(Tenant.active == True)
+
+        if tenant_ids:
+            query = query.filter(Tenant.id.in_(tenant_ids))
+        else:
+            # Default: only send to tenants who haven't been sent opt-in yet
+            query = query.filter(
+                Tenant.sms_opt_in_status == "pending",
+                Tenant.initial_opt_in_message_sent == False,
+            )
+
+        tenants = query.all()
+
+        if not tenants:
+            return {
+                "message": "No tenants to send opt-in requests to",
+                "sent_count": 0,
+                "failed_count": 0,
+            }
+
+        sent_count = 0
+        failed_count = 0
+        results = []
+
+        for tenant in tenants:
+            try:
+                result = await sms_service.send_sms(
+                    tenant=tenant,
+                    message="",
+                    template_name="opt_in_request",
+                    test_mode=test_mode,
+                )
+
+                if result["success"]:
+                    tenant.initial_opt_in_message_sent = True
+                    tenant.initial_opt_in_sent_date = datetime.utcnow()
+                    sent_count += 1
+                else:
+                    failed_count += 1
+
+                results.append(
+                    {
+                        "tenant_id": tenant.id,
+                        "tenant_name": tenant.name,
+                        "success": result["success"],
+                        "error": result.get("error"),
+                    }
+                )
+
+            except Exception as e:
+                logger.error(f"Failed to send opt-in to tenant {tenant.id}: {e!s}")
+                failed_count += 1
+                results.append(
+                    {
+                        "tenant_id": tenant.id,
+                        "tenant_name": tenant.name,
+                        "success": False,
+                        "error": str(e),
+                    }
+                )
+
+        db.commit()
+
+        logger.info(
+            f"Sent opt-in requests: {sent_count} successful, {failed_count} failed"
+        )
+
+        return {
+            "message": f"Sent opt-in requests to {sent_count} tenants",
+            "sent_count": sent_count,
+            "failed_count": failed_count,
+            "results": results,
+        }
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to send opt-in requests: {e!s}")
+        raise HTTPException(status_code=500, detail="Failed to send opt-in requests")
+
+
+@router.get("/opt-in-status/summary")
+async def get_opt_in_summary(db: Session = Depends(get_db)):
+    """Get summary of tenant opt-in statuses."""
+    try:
+        total_active = db.query(Tenant).filter(Tenant.active == True).count()
+
+        opted_in = (
+            db.query(Tenant)
+            .filter(Tenant.active == True, Tenant.sms_opt_in_status == "opted_in")
+            .count()
+        )
+
+        opted_out = (
+            db.query(Tenant)
+            .filter(Tenant.active == True, Tenant.sms_opt_in_status == "opted_out")
+            .count()
+        )
+
+        pending = (
+            db.query(Tenant)
+            .filter(Tenant.active == True, Tenant.sms_opt_in_status == "pending")
+            .count()
+        )
+
+        initial_sent = (
+            db.query(Tenant)
+            .filter(Tenant.active == True, Tenant.initial_opt_in_message_sent == True)
+            .count()
+        )
+
+        return {
+            "total_active_tenants": total_active,
+            "opted_in": opted_in,
+            "opted_out": opted_out,
+            "pending": pending,
+            "initial_message_sent": initial_sent,
+            "opt_in_rate": (
+                round((opted_in / total_active * 100), 1) if total_active > 0 else 0
+            ),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get opt-in summary: {e!s}")
+        raise HTTPException(status_code=500, detail="Failed to get opt-in summary")
+
+
+@router.post("/{tenant_id}/update-opt-in-status")
+async def update_opt_in_status(
+    tenant_id: int,
+    opt_in_status: str = Query(..., regex="^(pending|opted_in|opted_out)$"),
+    db: Session = Depends(get_db),
+):
+    """Manually update tenant's opt-in status."""
+    try:
+        tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
+        if not tenant:
+            raise HTTPException(status_code=404, detail="Tenant not found")
+
+        tenant.sms_opt_in_status = opt_in_status
+        tenant.updated_at = datetime.utcnow()
+
+        if opt_in_status == "opted_in":
+            tenant.sms_opt_in_date = datetime.utcnow()
+            tenant.sms_opt_out_date = None
+        elif opt_in_status == "opted_out":
+            tenant.sms_opt_out_date = datetime.utcnow()
+            tenant.sms_opt_in_date = None
+
+        db.commit()
+
+        logger.info(f"Updated opt-in status for tenant {tenant.id} to {opt_in_status}")
+        return {
+            "message": f"Updated opt-in status to {opt_in_status}",
+            "tenant_id": tenant.id,
+            "tenant_name": tenant.name,
+            "opt_in_status": opt_in_status,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update opt-in status: {e!s}")
+        raise HTTPException(status_code=500, detail="Failed to update opt-in status")

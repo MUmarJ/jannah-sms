@@ -4,16 +4,14 @@ Migrated and enhanced from original Streamlit application.
 """
 
 import asyncio
-import aiohttp
 import logging
-from typing import Dict, List, Optional, Any
-from datetime import datetime, date
-from dateutil.relativedelta import relativedelta
+from datetime import date, datetime
+from typing import Any, Optional
+
+import aiohttp
 
 from app.core.config import settings
-from app.models.message import MessageCreate
 from app.models.tenant import Tenant
-
 
 logger = logging.getLogger(__name__)
 
@@ -33,17 +31,20 @@ class SMSService:
 
         # Message templates from original code
         self.templates = {
+            "opt_in_request": f"Welcome to {self.company_name} SMS notifications!\n\nReply YES to receive important reminders about rent, maintenance, and building updates. Reply STOP to opt out at any time.\n\nStandard message rates may apply.",
+            "opt_in_confirmation": f"Thank you! You're now subscribed to {self.company_name} SMS notifications. Reply STOP at any time to unsubscribe.",
+            "opt_out_confirmation": f"You've been unsubscribed from {self.company_name} SMS notifications. Reply YES at any time to resubscribe.",
             "rent_reminder": f"Hello {{name}}, this is {self.company_name}\nJust a reminder, your rent is due on {{rent_day}}. Please note a fee will be charged for any late payments. Thank you!",
-            "rent_reminder_short": f"Hi {{name}} - Just a reminder, your rent is due on {{due_date}}",
+            "rent_reminder_short": "Hi {name} - Just a reminder, your rent is due on {due_date}",
             "payment_received": f"Hello {{name}}, this is {self.company_name}\nWe have received your payment on-time. Thank you!",
-            "maintenance_notice": f"Hi {{name}} - Just a reminder, your maintenance will be conducted on {{date}}",
-            "trash_reminder": f"Hi {{name}} - Trash is collected on Monday and Sunday, thank you!",
-            "trash_thanks": f"Hi {{name}} - Thank you for timely throwing out the trash!",
+            "maintenance_notice": "Hi {name} - Just a reminder, your maintenance will be conducted on {date}",
+            "trash_reminder": "Hi {name} - Trash is collected on Monday and Sunday, thank you!",
+            "trash_thanks": "Hi {name} - Thank you for timely throwing out the trash!",
             "late_fee_notice": f"Hello {{name}}, this is {self.company_name}\nYour rent is now overdue. A late fee has been applied to your account. Please contact us immediately to arrange payment.",
             "custom": "{{message}}",
         }
 
-    async def test_api_key(self, test_mode: bool = True) -> Dict[str, Any]:
+    async def test_api_key(self, test_mode: bool = True) -> dict[str, Any]:
         """
         Test the SMS API key to ensure it's valid.
 
@@ -77,8 +78,8 @@ class SMSService:
                     }
 
         except Exception as e:
-            logger.error(f"SMS API key test failed: {str(e)}")
-            return {"success": False, "error": f"API key test failed: {str(e)}"}
+            logger.error(f"SMS API key test failed: {e!s}")
+            return {"success": False, "error": f"API key test failed: {e!s}"}
 
     def _replace_placeholders(self, message: str, tenant: Tenant, **kwargs) -> str:
         """
@@ -96,45 +97,51 @@ class SMSService:
         current_due_date = tenant.due_date
         if isinstance(current_due_date, str):
             try:
-                current_due_date = datetime.strptime(current_due_date, "%Y-%m-%d").date()
+                current_due_date = datetime.strptime(
+                    current_due_date, "%Y-%m-%d"
+                ).date()
             except ValueError:
                 # Default to first of current month if parsing fails
                 current_due_date = date.today().replace(day=1)
         elif not current_due_date:
             # Default to first of current month if no due date
             current_due_date = date.today().replace(day=1)
-        
+
         # Format due date for display
-        formatted_due_date = current_due_date.strftime("%B %d") if current_due_date else "the due date"
-        
+        formatted_due_date = (
+            current_due_date.strftime("%B %d") if current_due_date else "the due date"
+        )
+
         # Calculate dynamic rent_day - always use current month with specified day
         rent_day_num = kwargs.get("rent_day", 5)  # Default to 5th
         today = date.today()
-        current_month_rent_day = today.replace(day=min(rent_day_num, 28))  # Cap at 28 to avoid month-end issues
+        current_month_rent_day = today.replace(
+            day=min(rent_day_num, 28)
+        )  # Cap at 28 to avoid month-end issues
         formatted_rent_day = current_month_rent_day.strftime("%B %d")
-        
+
         # For display with ordinal suffix
         day = current_month_rent_day.day
         if 10 <= day % 100 <= 20:
             suffix = "th"
         else:
             suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
-        formatted_rent_day_ordinal = f"{current_month_rent_day.strftime('%B')} {day}{suffix}"
-        
+        formatted_rent_day_ordinal = (
+            f"{current_month_rent_day.strftime('%B')} {day}{suffix}"
+        )
+
         replacements = {
             # Original placeholders
             "name": tenant.name,
-            "unit": tenant.unit_number or "your unit", 
+            "unit": tenant.unit_number or "your unit",
             "phone": tenant.contact,  # Fixed: use contact instead of phone
             "due_date": formatted_due_date,
             "date": kwargs.get("date", "the scheduled date"),
             "amount": kwargs.get("amount", ""),
             "message": kwargs.get("message", ""),
-            
             # Dynamic rent day placeholders
             "rent_day": formatted_rent_day_ordinal,  # e.g., "August 5th"
             "rent_date": formatted_rent_day,  # e.g., "August 05"
-            
             # Additional common placeholders
             "tenant_name": tenant.name,
             "tenant_phone": tenant.contact,
@@ -159,7 +166,7 @@ class SMSService:
         test_mode: bool = False,
         template_name: Optional[str] = None,
         **template_vars,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Send SMS to a single tenant.
 
@@ -202,7 +209,7 @@ class SMSService:
                 "message": full_message,
                 "key": key,
             }
-            
+
             # Add webhook URL for replies (only for non-test mode)
             if not test_mode:
                 # In production, this should be your actual domain
@@ -237,7 +244,7 @@ class SMSService:
                     }
 
         except Exception as e:
-            error_msg = f"Failed to send SMS to {tenant.name}: {str(e)}"
+            error_msg = f"Failed to send SMS to {tenant.name}: {e!s}"
             logger.error(error_msg)
             return {
                 "success": False,
@@ -248,15 +255,16 @@ class SMSService:
 
     async def send_bulk_sms(
         self,
-        tenants: List[Tenant],
+        tenants: list[Tenant],
         message: str,
         test_mode: bool = False,
         template_name: Optional[str] = None,
         delay_seconds: float = 1.0,
+        skip_opt_in_check: bool = False,
         **template_vars,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
-        Send SMS to multiple tenants with rate limiting.
+        Send SMS to multiple tenants with rate limiting and opt-in compliance.
 
         Args:
             tenants: List of tenants to send to
@@ -264,6 +272,7 @@ class SMSService:
             test_mode: Whether to use test mode
             template_name: Name of template to use
             delay_seconds: Delay between messages for rate limiting
+            skip_opt_in_check: Skip opt-in verification (for opt-in/opt-out confirmations only)
             **template_vars: Variables for template replacement
 
         Returns:
@@ -272,11 +281,31 @@ class SMSService:
         results = []
         successful_sends = 0
         failed_sends = 0
+        skipped_not_opted_in = 0
 
         logger.info(f"Starting bulk SMS send to {len(tenants)} tenants")
 
         for tenant in tenants:
             try:
+                # A2P Compliance: Only send to opted-in tenants (unless skip flag is set)
+                if not skip_opt_in_check and hasattr(tenant, "sms_opt_in_status"):
+                    if tenant.sms_opt_in_status != "opted_in":
+                        logger.warning(
+                            f"Skipping tenant {tenant.id} ({tenant.name}) - "
+                            f"opt-in status: {tenant.sms_opt_in_status}"
+                        )
+                        skipped_not_opted_in += 1
+                        results.append(
+                            {
+                                "success": False,
+                                "error": f"Tenant not opted in (status: {tenant.sms_opt_in_status})",
+                                "tenant_id": tenant.id,
+                                "tenant_name": tenant.name,
+                                "skipped": True,
+                            }
+                        )
+                        continue
+
                 result = await self.send_sms(
                     tenant=tenant,
                     message=message,
@@ -297,7 +326,7 @@ class SMSService:
                     await asyncio.sleep(delay_seconds)
 
             except Exception as e:
-                logger.error(f"Error in bulk SMS for tenant {tenant.id}: {str(e)}")
+                logger.error(f"Error in bulk SMS for tenant {tenant.id}: {e!s}")
                 failed_sends += 1
                 results.append(
                     {
@@ -308,25 +337,29 @@ class SMSService:
                     }
                 )
 
-        success_rate = (successful_sends / len(tenants)) * 100 if tenants else 0
+        total_attempted = successful_sends + failed_sends
+        success_rate = (
+            (successful_sends / total_attempted) * 100 if total_attempted > 0 else 0
+        )
 
         logger.info(
-            f"Bulk SMS completed: {successful_sends} successful, {failed_sends} failed "
-            f"({success_rate:.1f}% success rate)"
+            f"Bulk SMS completed: {successful_sends} successful, {failed_sends} failed, "
+            f"{skipped_not_opted_in} skipped (not opted in) ({success_rate:.1f}% success rate)"
         )
 
         return {
             "total_tenants": len(tenants),
             "successful_sends": successful_sends,
             "failed_sends": failed_sends,
+            "skipped_not_opted_in": skipped_not_opted_in,
             "success_rate": round(success_rate, 1),
             "results": results,
             "test_mode": test_mode,
         }
 
     async def send_rent_reminders(
-        self, unpaid_tenants: List[Tenant], due_date: str, test_mode: bool = False
-    ) -> Dict[str, Any]:
+        self, unpaid_tenants: list[Tenant], due_date: str, test_mode: bool = False
+    ) -> dict[str, Any]:
         """
         Send rent reminder messages to unpaid tenants.
 
@@ -347,8 +380,8 @@ class SMSService:
         )
 
     async def send_late_fee_notices(
-        self, late_tenants: List[Tenant], test_mode: bool = False
-    ) -> Dict[str, Any]:
+        self, late_tenants: list[Tenant], test_mode: bool = False
+    ) -> dict[str, Any]:
         """
         Send late fee notices to tenants with overdue rent.
 
@@ -367,8 +400,8 @@ class SMSService:
         )
 
     async def send_payment_confirmations(
-        self, paid_tenants: List[Tenant], test_mode: bool = False
-    ) -> Dict[str, Any]:
+        self, paid_tenants: list[Tenant], test_mode: bool = False
+    ) -> dict[str, Any]:
         """
         Send payment confirmation messages to tenants who paid.
 
@@ -386,7 +419,7 @@ class SMSService:
             test_mode=test_mode,
         )
 
-    def get_available_templates(self) -> Dict[str, str]:
+    def get_available_templates(self) -> dict[str, str]:
         """
         Get all available message templates.
 
@@ -409,7 +442,7 @@ class SMSService:
             result = await self.test_api_key(test_mode)
             return result.get("quotaRemaining")
         except Exception as e:
-            logger.error(f"Failed to get SMS quota: {str(e)}")
+            logger.error(f"Failed to get SMS quota: {e!s}")
             return None
 
 

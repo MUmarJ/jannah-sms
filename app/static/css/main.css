@@ -1,4 +1,4 @@
-/* 
+/*
  * Elderly-Friendly CSS for Jannah SMS Admin
  * Optimized for large fonts, high contrast, and simple navigation
  */
@@ -20,7 +20,7 @@
     --gray-300: #d1d5db;
     --gray-800: #1f2937;
     --gray-900: #111827;
-    
+
     /* Font sizes for elderly users */
     --text-xs: 16px;
     --text-sm: 18px;
@@ -29,7 +29,7 @@
     --text-xl: 24px;
     --text-2xl: 28px;
     --text-3xl: 32px;
-    
+
     /* Spacing */
     --spacing-xs: 8px;
     --spacing-sm: 12px;
@@ -45,7 +45,8 @@
 }
 
 html {
-    font-size: 18px; /* Base font size for elderly users */
+    font-size: 18px;
+    /* Base font size for elderly users */
 }
 
 body {
@@ -352,18 +353,32 @@ p {
 .status-badge {
     display: inline-flex;
     align-items: center;
-    padding: var(--spacing-xs) var(--spacing-md);
+    padding: var(--spacing-xs) 4px;
     border-radius: 20px;
     font-weight: 600;
     font-size: var(--text-sm);
-    line-height: 1;
     gap: var(--spacing-xs);
 }
 
-.status-active { background-color: var(--success-light); color: #065f46; }
-.status-paused { background-color: var(--warning-light); color: #92400e; }
-.status-inactive { background-color: var(--gray-100); color: var(--gray-800); }
-.status-error { background-color: var(--danger-light); color: #991b1b; }
+.status-active {
+    background-color: var(--success-light);
+    color: #065f46;
+}
+
+.status-paused {
+    background-color: var(--warning-light);
+    color: #92400e;
+}
+
+.status-inactive {
+    background-color: var(--gray-100);
+    color: var(--gray-800);
+}
+
+.status-error {
+    background-color: var(--danger-light);
+    color: #991b1b;
+}
 
 /* Tables */
 .table-container {
@@ -405,9 +420,17 @@ p {
     gap: var(--spacing-lg);
 }
 
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
 
 /* Responsive design */
 @media (max-width: 768px) {
@@ -415,22 +438,22 @@ p {
         flex-direction: column;
         gap: var(--spacing-md);
     }
-    
+
     .nav-menu {
         flex-direction: column;
         width: 100%;
     }
-    
+
     .nav-item {
         text-align: center;
     }
-    
+
     .grid-2,
     .grid-3,
     .grid-4 {
         grid-template-columns: 1fr;
     }
-    
+
     .card {
         padding: var(--spacing-md);
     }
@@ -453,7 +476,9 @@ p {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Accessibility improvements */
@@ -481,12 +506,13 @@ p {
 
 /* Print styles */
 @media print {
+
     .main-nav,
     .btn,
     .alert {
         display: none;
     }
-    
+
     .card {
         box-shadow: none;
         border: 1px solid var(--gray-300);

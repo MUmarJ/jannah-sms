@@ -9,7 +9,7 @@
         <p style="color: #6b7280; font-size: 18px; margin: 0;">
             Welcome to your SMS management system. Here's an overview of your activity.
         </p>
-        
+
         <!-- SMS Quota Display -->
         {% if sms_quota is not none %}
             <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px 16px; text-align: center;">
@@ -87,7 +87,7 @@
         <!-- Recent Messages -->
         <div class="card">
             <h2 style="margin-bottom: 24px;">📬 Recent Messages</h2>
-            
+
             {% if recent_messages %}
                 <div class="table-container">
                     <table class="table">
@@ -103,7 +103,7 @@
                                 <tr>
                                     <td>{{ message.tenant_name }}</td>
                                     <td>
-                                        <span class="status-badge 
+                                        <span class="status-badge
                                             {% if message.status == 'sent' %}status-active
                                             {% elif message.status == 'failed' %}status-error
                                             {% else %}status-paused{% endif %}">
@@ -131,7 +131,7 @@
         <!-- Upcoming Schedules -->
         <div class="card">
             <h2 style="margin-bottom: 24px;">⏰ Upcoming Schedules</h2>
-            
+
             {% if upcoming_schedules %}
                 {% for schedule in upcoming_schedules %}
                     <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
@@ -147,7 +147,7 @@
                         {% endif %}
                     </div>
                 {% endfor %}
-                
+
                 <div style="text-align: center; margin-top: 16px;">
                     <a href="/schedules" class="btn btn-secondary">Manage All Schedules</a>
                 </div>
@@ -204,7 +204,7 @@
 <script>
     // Auto-refresh dashboard data every 30 seconds
     let refreshInterval;
-    
+
     function startAutoRefresh() {
         refreshInterval = setInterval(() => {
             // Only refresh if the page is visible
@@ -213,16 +213,16 @@
             }
         }, 30000); // 30 seconds
     }
-    
+
     function stopAutoRefresh() {
         if (refreshInterval) {
             clearInterval(refreshInterval);
         }
     }
-    
+
     // Start auto-refresh when page loads
     document.addEventListener('DOMContentLoaded', startAutoRefresh);
-    
+
     // Stop auto-refresh when page is not visible
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
@@ -231,7 +231,7 @@
             startAutoRefresh();
         }
     });
-    
+
     // Stop auto-refresh when leaving the page
     window.addEventListener('beforeunload', stopAutoRefresh);
 </script>

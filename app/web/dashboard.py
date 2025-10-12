@@ -4,15 +4,16 @@ Dashboard web interface routes.
 
 import logging
 from datetime import datetime, timedelta
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.tenant import Tenant
+from app.core.templates import get_template_context, templates
 from app.models.message import Message, MessageStatus
 from app.models.schedule import Schedule, ScheduleStatus
-from app.core.templates import templates, get_template_context
+from app.models.tenant import Tenant
 from app.services.sms_service import sms_service
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,11 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
                     {
                         "id": message.id,
                         "tenant_name": tenant.name,
-                        "status": message.status.value if hasattr(message.status, 'value') else message.status,
+                        "status": (
+                            message.status.value
+                            if hasattr(message.status, "value")
+                            else message.status
+                        ),
                         "status_display": _get_status_display(message.status),
                         "sent_at": message.sent_at,
                     }
@@ -70,7 +75,11 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
                 {
                     "id": schedule.id,
                     "name": schedule.name,
-                    "status": schedule.status.value if hasattr(schedule.status, 'value') else schedule.status,
+                    "status": (
+                        schedule.status.value
+                        if hasattr(schedule.status, "value")
+                        else schedule.status
+                    ),
                     "status_display": _get_schedule_status_display(schedule.status),
                     "schedule_display": _format_schedule_display(
                         schedule.schedule_config
@@ -102,9 +111,10 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        logger.error(f"Dashboard page error: {str(e)}")
+        logger.error(f"Dashboard page error: {e!s}")
         return templates.TemplateResponse(
-            "error.html", get_template_context(request, error="Failed to load dashboard")
+            "error.html",
+            get_template_context(request, error="Failed to load dashboard"),
         )
 
 
@@ -151,7 +161,7 @@ async def _get_dashboard_stats(db: Session) -> dict:
         }
 
     except Exception as e:
-        logger.error(f"Error getting dashboard stats: {str(e)}")
+        logger.error(f"Error getting dashboard stats: {e!s}")
         return {
             "total_tenants": 0,
             "active_schedules": 0,
@@ -163,14 +173,14 @@ async def _get_dashboard_stats(db: Session) -> dict:
 def _get_status_display(status) -> str:
     """Get display text for message status."""
     # Handle both enum and string status values
-    if hasattr(status, 'value'):
+    if hasattr(status, "value"):
         status_value = status.value
     else:
         status_value = status
-        
+
     status_map = {
         "sent": "Sent",
-        "failed": "Failed", 
+        "failed": "Failed",
         "scheduled": "Scheduled",
         "cancelled": "Cancelled",
     }
@@ -179,12 +189,12 @@ def _get_status_display(status) -> str:
 
 def _get_schedule_status_display(status) -> str:
     """Get display text for schedule status."""
-    # Handle both enum and string status values  
-    if hasattr(status, 'value'):
+    # Handle both enum and string status values
+    if hasattr(status, "value"):
         status_value = status.value
     else:
         status_value = status
-        
+
     status_map = {
         "active": "Active",
         "paused": "Paused",
