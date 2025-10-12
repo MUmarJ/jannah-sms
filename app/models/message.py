@@ -3,19 +3,20 @@ Message models - SQLAlchemy and Pydantic schemas for SMS messages and logs.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 from enum import Enum
+from typing import Any, Optional
+
+from pydantic import BaseModel, validator
 from sqlalchemy import (
+    JSON,
+    Boolean,
     Column,
+    DateTime,
+    ForeignKey,
     Integer,
     String,
-    Boolean,
-    DateTime,
     Text,
-    JSON,
-    ForeignKey,
 )
-from pydantic import BaseModel, validator
 
 from app.core.database import Base
 
@@ -86,17 +87,19 @@ class MessageReply(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Link to original message
-    original_message_id = Column(Integer, ForeignKey("messages.id"), nullable=False, index=True)
+    original_message_id = Column(
+        Integer, ForeignKey("messages.id"), nullable=False, index=True
+    )
     text_id = Column(String(255), nullable=False, index=True)  # TextBelt message ID
 
     # Reply details
     from_number = Column(String(20), nullable=False)
     reply_text = Column(Text, nullable=False)
-    
+
     # Metadata
     received_at = Column(DateTime, default=datetime.utcnow)
     processed = Column(Boolean, default=False)
-    
+
     def __repr__(self):
         return f"<MessageReply(id={self.id}, text_id='{self.text_id}', from_number='{self.from_number}')>"
 
@@ -162,7 +165,7 @@ class MessageLogCreate(MessageLogBase):
     """Schema for creating a new message log."""
 
     tenant_id: Optional[int] = None
-    conditions_met: Optional[Dict[str, Any]] = None
+    conditions_met: Optional[dict[str, Any]] = None
     created_by: Optional[str] = None
 
 
@@ -171,7 +174,7 @@ class MessageLogUpdate(BaseModel):
 
     status: Optional[MessageStatus] = None
     error_message: Optional[str] = None
-    api_response: Optional[Dict[str, Any]] = None
+    api_response: Optional[dict[str, Any]] = None
     delivered_at: Optional[datetime] = None
 
 
@@ -181,10 +184,10 @@ class MessageLogInDB(MessageLogBase):
     id: int
     tenant_id: Optional[int] = None
     job_id: Optional[str] = None
-    api_response: Optional[Dict[str, Any]] = None
+    api_response: Optional[dict[str, Any]] = None
     error_message: Optional[str] = None
-    conditions_met: Optional[Dict[str, Any]] = None
-    condition_evaluation: Optional[Dict[str, Any]] = None
+    conditions_met: Optional[dict[str, Any]] = None
+    condition_evaluation: Optional[dict[str, Any]] = None
     sent_at: datetime
     delivered_at: Optional[datetime] = None
     created_by: Optional[str] = None
@@ -267,8 +270,6 @@ class MessageTemplateBase(BaseModel):
 class MessageTemplateCreate(MessageTemplateBase):
     """Schema for creating a new message template."""
 
-    pass
-
 
 class MessageTemplateUpdate(BaseModel):
     """Schema for updating a message template."""
@@ -295,8 +296,6 @@ class MessageTemplateInDB(MessageTemplateBase):
 
 class MessageTemplateResponse(MessageTemplateInDB):
     """Schema for message template API responses."""
-
-    pass
 
 
 # Bulk messaging
@@ -336,13 +335,13 @@ class BulkMessageResponse(BaseModel):
     total_requested: int
     messages_queued: int
     messages_failed: int
-    tenant_results: list[Dict[str, Any]]
+    tenant_results: list[dict[str, Any]]
     errors: list[str]
 
 
 class MessageSend(BaseModel):
     recipient_type: str
-    selected_tenants: Optional[List[int]] = None
+    selected_tenants: Optional[list[int]] = None
     send_time: str  # "now" or "scheduled"
     message: str
     test_mode: bool = True
@@ -363,7 +362,7 @@ class MessageStats(BaseModel):
 # Message Reply Schemas
 class MessageReplyBase(BaseModel):
     """Base message reply schema."""
-    
+
     text_id: str
     from_number: str
     reply_text: str
@@ -371,25 +370,25 @@ class MessageReplyBase(BaseModel):
 
 class MessageReplyCreate(MessageReplyBase):
     """Schema for creating a new message reply."""
-    
+
     original_message_id: Optional[int] = None
 
 
 class MessageReplyInDB(MessageReplyBase):
     """Schema for message reply as stored in database."""
-    
+
     id: int
     original_message_id: int
     received_at: datetime
     processed: bool = False
-    
+
     class Config:
         from_attributes = True
 
 
 class MessageReplyResponse(MessageReplyInDB):
     """Schema for message reply API responses."""
-    
+
     @property
     def formatted_received_at(self) -> str:
         """Get formatted received time for display."""
@@ -401,7 +400,7 @@ class MessageReplyResponse(MessageReplyInDB):
 # Webhook payload schema
 class TextBeltWebhookPayload(BaseModel):
     """Schema for TextBelt webhook payload."""
-    
+
     textId: str
     fromNumber: str
     text: str

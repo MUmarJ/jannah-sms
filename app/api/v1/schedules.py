@@ -4,23 +4,23 @@ Schedules API endpoints for managing automated message schedules.
 
 import logging
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.schedule import (
     Schedule,
-    ScheduleStatus,
     ScheduleCreate,
-    ScheduleUpdate,
     ScheduleResponse,
     ScheduleStats,
+    ScheduleStatus,
+    ScheduleUpdate,
 )
-from app.services.scheduler_service import scheduler_service
 from app.services.condition_service import condition_service
-
+from app.services.scheduler_service import scheduler_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -53,13 +53,13 @@ async def get_schedule_stats(db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        logger.error(f"Failed to get schedule stats: {str(e)}")
+        logger.error(f"Failed to get schedule stats: {e!s}")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve schedule statistics"
         )
 
 
-@router.get("/", response_model=List[ScheduleResponse])
+@router.get("/", response_model=list[ScheduleResponse])
 async def get_schedules(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -90,7 +90,7 @@ async def get_schedules(
         return schedules
 
     except Exception as e:
-        logger.error(f"Failed to get schedules: {str(e)}")
+        logger.error(f"Failed to get schedules: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to retrieve schedules")
 
 
@@ -116,9 +116,9 @@ async def create_schedule(schedule_data: ScheduleCreate, db: Session = Depends(g
             conditions=schedule_data.conditions,
             target_tenant_types=schedule_data.target_tenant_types,
             status=schedule_data.status,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
-        
+
         db.add(schedule)
         db.commit()
         db.refresh(schedule)
@@ -129,7 +129,7 @@ async def create_schedule(schedule_data: ScheduleCreate, db: Session = Depends(g
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to create schedule: {str(e)}")
+        logger.error(f"Failed to create schedule: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to create schedule")
 
 
@@ -169,7 +169,7 @@ async def update_schedule(
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to update schedule {schedule_id}: {str(e)}")
+        logger.error(f"Failed to update schedule {schedule_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to update schedule")
 
 
@@ -187,7 +187,7 @@ async def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to delete schedule {schedule_id}: {str(e)}")
+        logger.error(f"Failed to delete schedule {schedule_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to delete schedule")
 
 
@@ -205,7 +205,7 @@ async def pause_schedule(schedule_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to pause schedule {schedule_id}: {str(e)}")
+        logger.error(f"Failed to pause schedule {schedule_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to pause schedule")
 
 
@@ -223,7 +223,7 @@ async def resume_schedule(schedule_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to resume schedule {schedule_id}: {str(e)}")
+        logger.error(f"Failed to resume schedule {schedule_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to resume schedule")
 
 
@@ -252,7 +252,7 @@ async def run_schedule_now(schedule_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to run schedule {schedule_id}: {str(e)}")
+        logger.error(f"Failed to run schedule {schedule_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to run schedule")
 
 
@@ -274,7 +274,7 @@ async def pause_all_schedules(db: Session = Depends(get_db)):
         return {"message": f"Paused {paused_count} schedules"}
 
     except Exception as e:
-        logger.error(f"Failed to pause all schedules: {str(e)}")
+        logger.error(f"Failed to pause all schedules: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to pause all schedules")
 
 
@@ -296,7 +296,7 @@ async def resume_all_schedules(db: Session = Depends(get_db)):
         return {"message": f"Resumed {resumed_count} schedules"}
 
     except Exception as e:
-        logger.error(f"Failed to resume all schedules: {str(e)}")
+        logger.error(f"Failed to resume all schedules: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to resume all schedules")
 
 
@@ -315,7 +315,7 @@ async def get_job_status(schedule_id: int):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get job status for schedule {schedule_id}: {str(e)}")
+        logger.error(f"Failed to get job status for schedule {schedule_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get job status")
 
 
@@ -327,13 +327,13 @@ async def get_all_jobs():
         return {"jobs": jobs}
 
     except Exception as e:
-        logger.error(f"Failed to get all jobs: {str(e)}")
+        logger.error(f"Failed to get all jobs: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get all jobs")
 
 
 @router.post("/test-conditions")
 async def test_schedule_conditions(
-    conditions: Dict[str, Any], db: Session = Depends(get_db)
+    conditions: dict[str, Any], db: Session = Depends(get_db)
 ):
     """Test schedule conditions and see which tenants would match."""
     try:
@@ -341,7 +341,7 @@ async def test_schedule_conditions(
         return result
 
     except Exception as e:
-        logger.error(f"Failed to test conditions: {str(e)}")
+        logger.error(f"Failed to test conditions: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to test conditions")
 
 
@@ -353,7 +353,7 @@ async def get_predefined_conditions():
         return {"predefined_conditions": conditions}
 
     except Exception as e:
-        logger.error(f"Failed to get predefined conditions: {str(e)}")
+        logger.error(f"Failed to get predefined conditions: {e!s}")
         raise HTTPException(
             status_code=500, detail="Failed to get predefined conditions"
         )
@@ -434,7 +434,7 @@ async def get_recent_executions(
         return {"executions": executions}
 
     except Exception as e:
-        logger.error(f"Failed to get recent executions: {str(e)}")
+        logger.error(f"Failed to get recent executions: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get recent executions")
 
 
@@ -459,7 +459,7 @@ async def get_execution_details(execution_id: str, db: Session = Depends(get_db)
             "total_recipients": 0,
             "successful_sends": schedule.success_count,
             "failed_sends": schedule.failure_count,
-            "success_rate": 0
+            "success_rate": 0,
         }
 
         return {
@@ -484,7 +484,7 @@ async def get_execution_details(execution_id: str, db: Session = Depends(get_db)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get execution details: {str(e)}")
+        logger.error(f"Failed to get execution details: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get execution details")
 
 

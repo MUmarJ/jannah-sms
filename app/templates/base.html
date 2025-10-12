@@ -1,68 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="{{ app_tagline }}">
     <title>{% block title %}{{ app_name }}{% endblock %}</title>
-    
+
     <!-- Elderly-friendly CSS -->
     <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}">
 
     <!-- Dynamic theming -->
     <style>
-        :root {
-            --primary-color: {{ primary_color }};
-            --secondary-color: {{ secondary_color }};
+        .nav-brand {
+            color: var(--primary) !important;
         }
-        .nav-brand { color: var(--primary-color) !important; }
-        .nav-item.active { background-color: var(--primary-color) !important; }
-        .btn-primary { background-color: var(--primary-color) !important; border-color: var(--primary-color) !important; }
+
+        .nav-item.active {
+            background-color: var(--primary) !important;
+        }
+
+        .btn-primary {
+            background-color: var(--primary) !important;
+            border-color: var(--primary) !important;
+        }
     </style>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', path='images/favicon.ico') }}">
-    
+
     <!-- Additional CSS -->
     {% block extra_css %}{% endblock %}
 </head>
+
 <body>
     <!-- Skip to main content for accessibility -->
     <a href="#main-content" class="sr-only">Skip to main content</a>
-    
+
     <!-- Main Navigation -->
     <nav class="main-nav" role="navigation" aria-label="Main navigation">
         <div class="nav-container">
             <a href="/dashboard" class="nav-brand">
                 {{ app_icon }} {{ app_name }}
             </a>
-            
+
             <ul class="nav-menu" role="menubar">
                 <li role="none">
-                    <a href="/dashboard" 
-                       class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}" 
-                       role="menuitem">
+                    <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}"
+                        role="menuitem">
                         🏠 Dashboard
                     </a>
                 </li>
                 <li role="none">
-                    <a href="/messages" 
-                       class="nav-item {% if request.url.path.startswith('/messages') %}active{% endif %}" 
-                       role="menuitem">
+                    <a href="/messages"
+                        class="nav-item {% if request.url.path.startswith('/messages') %}active{% endif %}"
+                        role="menuitem">
                         💬 Messages
                     </a>
                 </li>
                 <li role="none">
-                    <a href="/tenants" 
-                       class="nav-item {% if request.url.path.startswith('/tenants') %}active{% endif %}" 
-                       role="menuitem">
+                    <a href="/tenants"
+                        class="nav-item {% if request.url.path.startswith('/tenants') %}active{% endif %}"
+                        role="menuitem">
                         👥 Tenants
                     </a>
                 </li>
                 <li role="none">
-                    <a href="/schedules" 
-                       class="nav-item {% if request.url.path.startswith('/schedules') %}active{% endif %}" 
-                       role="menuitem">
+                    <a href="/schedules"
+                        class="nav-item {% if request.url.path.startswith('/schedules') %}active{% endif %}"
+                        role="menuitem">
                         ⏰ Schedules
                     </a>
                 </li>
@@ -72,14 +78,15 @@
 
     <!-- Flash Messages / Alerts -->
     {% if messages %}
-        <div class="container" style="padding-top: 16px;">
-            {% for category, message in messages %}
-                <div class="alert alert-{{ category }}" role="alert" aria-live="polite">
-                    {% if category == 'success' %}✅{% elif category == 'warning' %}⚠️{% elif category == 'danger' %}❌{% else %}ℹ️{% endif %}
-                    {{ message }}
-                </div>
-            {% endfor %}
+    <div class="container" style="padding-top: 16px;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" role="alert" aria-live="polite">
+            {% if category == 'success' %}✅{% elif category == 'warning' %}⚠️{% elif category == 'danger' %}❌{% else
+            %}ℹ️{% endif %}
+            {{ message }}
         </div>
+        {% endfor %}
+    </div>
     {% endif %}
 
     <!-- Main Content -->
@@ -87,10 +94,10 @@
         <div class="container">
             <!-- Page Header -->
             {% block page_header %}
-                <div class="card-header">
-                    <h1 class="card-title">{% block page_title %}{{ app_name }}{% endblock %}</h1>
-                    {% block page_description %}{% endblock %}
-                </div>
+            <div class="card-header">
+                <h1 class="card-title">{% block page_title %}{{ app_name }}{% endblock %}</h1>
+                {% block page_description %}{% endblock %}
+            </div>
             {% endblock %}
 
             <!-- Page Content -->
@@ -118,18 +125,18 @@
 
     <!-- Base JavaScript -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
-    
+
     <!-- Additional JavaScript -->
     {% block extra_js %}{% endblock %}
 
     <!-- Initialize tooltips and accessibility features -->
     <script>
         // Simple accessibility improvements
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Add keyboard navigation to nav items
             const navItems = document.querySelectorAll('.nav-item');
             navItems.forEach(item => {
-                item.addEventListener('keydown', function(e) {
+                item.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         item.click();
@@ -153,4 +160,5 @@
         });
     </script>
 </body>
+
 </html>

@@ -22,7 +22,7 @@
         <div class="grid grid-3">
             <div class="form-group" style="margin-bottom: 0;">
                 <label for="search" class="form-label">Search Tenants</label>
-                <input type="text" id="search" class="form-input" 
+                <input type="text" id="search" class="form-input"
                        placeholder="Search by name, phone, or unit...">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -79,6 +79,7 @@
                             <th>Tenant</th>
                             <th>Unit</th>
                             <th>Contact</th>
+                            <th>SMS Opt-In</th>
                             <th>Rent Status</th>
                             <th>Last Payment</th>
                             <th>Actions</th>
@@ -86,8 +87,8 @@
                     </thead>
                     <tbody id="tenant-table-body">
                         {% for tenant in tenants %}
-                            <tr data-tenant="{{ tenant.name | lower }}" 
-                                data-unit="{{ tenant.unit_number or '' }}" 
+                            <tr data-tenant="{{ tenant.name | lower }}"
+                                data-unit="{{ tenant.unit_number or '' }}"
                                 data-phone="{{ tenant.phone or '' }}"
                                 data-payment="{{ 'paid' if tenant.is_current_month_rent_paid else 'unpaid' }}"
                                 data-late="{{ 'true' if tenant.late_fee_applicable else 'false' }}">
@@ -114,7 +115,46 @@
                                 </td>
                                 <td>
                                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <span class="status-badge 
+                                        {% if tenant.sms_opt_in_status == "opted_in" %}
+                                            <span class="status-badge status-active" title="Opted in on {{ tenant.sms_opt_in_date | format_datetime('%b %d, %Y') if tenant.sms_opt_in_date else 'N/A' }}">
+                                                ✅ Opted In
+                                            </span>
+                                            {% if tenant.sms_opt_in_date %}
+                                                <span style="font-size: 12px; color: #6b7280;">
+                                                    {{ tenant.sms_opt_in_date | format_datetime('%b %d, %Y') }}
+                                                </span>
+                                            {% endif %}
+                                        {% elif tenant.sms_opt_in_status == "opted_out" %}
+                                            <span class="status-badge status-error" title="Opted out on {{ tenant.sms_opt_out_date | format_datetime('%b %d, %Y') if tenant.sms_opt_out_date else 'N/A' }}">
+                                                🚫 Opted Out
+                                            </span>
+                                            {% if tenant.sms_opt_out_date %}
+                                                <span style="font-size: 12px; color: #6b7280;">
+                                                    {{ tenant.sms_opt_out_date | format_datetime('%b %d, %Y') }}
+                                                </span>
+                                            {% endif %}
+                                        {% elif tenant.initial_opt_in_message_sent %}
+                                            <span class="status-badge status-warning" title="Request sent on {{ tenant.initial_opt_in_sent_date | format_datetime('%b %d, %Y') if tenant.initial_opt_in_sent_date else 'N/A' }}">
+                                                ⏳ No Response
+                                            </span>
+                                            {% if tenant.initial_opt_in_sent_date %}
+                                                <span style="font-size: 12px; color: #6b7280;">
+                                                    Sent {{ tenant.initial_opt_in_sent_date | format_datetime('%b %d, %Y') }}
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="status-badge status-warning">
+                                                📤 Pending
+                                            </span>
+                                            <span style="font-size: 12px; color: #6b7280;">
+                                                Not sent
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <span class="status-badge
                                             {% if tenant.is_current_month_rent_paid %}status-active
                                             {% else %}status-error{% endif %}">
                                             {% if tenant.is_current_month_rent_paid %}✅ Paid{% else %}❌ Due{% endif %}
@@ -163,11 +203,11 @@
                     {% if pagination.has_prev %}
                         <a href="?page={{ pagination.prev_num }}" class="btn btn-secondary">← Previous</a>
                     {% endif %}
-                    
+
                     <span style="margin: 0 16px; font-size: 18px; color: #6b7280;">
                         Page {{ pagination.page }} of {{ pagination.pages }}
                     </span>
-                    
+
                     {% if pagination.has_next %}
                         <a href="?page={{ pagination.next_num }}" class="btn btn-secondary">Next →</a>
                     {% endif %}
@@ -216,11 +256,11 @@ function filterTenants() {
     const searchTerm = document.getElementById('search').value.toLowerCase();
     const paymentStatus = document.getElementById('payment_status').value;
     const rows = document.querySelectorAll('#tenant-table-body tr');
-    
+
     rows.forEach(row => {
         const tenantData = row.dataset.tenant + ' ' + row.dataset.unit + ' ' + row.dataset.phone;
         const matchesSearch = searchTerm === '' || tenantData.includes(searchTerm);
-        
+
         let matchesPayment = true;
         if (paymentStatus === 'paid') {
             matchesPayment = row.dataset.payment === 'paid';
@@ -229,7 +269,7 @@ function filterTenants() {
         } else if (paymentStatus === 'late') {
             matchesPayment = row.dataset.late === 'true';
         }
-        
+
         row.style.display = (matchesSearch && matchesPayment) ? '' : 'none';
     });
 }
@@ -239,10 +279,10 @@ function sortTenants() {
     const sortBy = document.getElementById('sort_by').value;
     const tbody = document.getElementById('tenant-table-body');
     const rows = Array.from(tbody.querySelectorAll('tr'));
-    
+
     rows.sort((a, b) => {
         let aVal, bVal;
-        
+
         switch(sortBy) {
             case 'name':
                 aVal = a.dataset.tenant;
@@ -257,10 +297,10 @@ function sortTenants() {
                 bVal = b.querySelector('td:nth-child(5)').textContent.trim();
                 break;
         }
-        
+
         return aVal.localeCompare(bVal);
     });
-    
+
     rows.forEach(row => tbody.appendChild(row));
 }
 
@@ -287,7 +327,7 @@ async function markPaid(tenantId) {
         'Mark this tenant as having paid rent for this month?',
         'Mark as Paid'
     );
-    
+
     if (confirmed) {
         try {
             await App.apiCall(`/api/v1/tenants/${tenantId}/mark-paid`, {
@@ -307,7 +347,7 @@ async function markAllPaid() {
         'Mark ALL tenants as having paid rent for this month? This action cannot be undone.',
         'Mark All as Paid'
     );
-    
+
     if (confirmed) {
         try {
             await App.apiCall('/api/v1/tenants/bulk-mark-paid', {
@@ -327,7 +367,7 @@ async function sendRentReminders() {
         'Send rent reminder messages to all tenants who haven\'t paid yet?',
         'Send Rent Reminders'
     );
-    
+
     if (confirmed) {
         try {
             const response = await App.apiCall('/api/v1/messages/send-rent-reminders', {
@@ -345,7 +385,7 @@ async function exportTenants() {
     try {
         const response = await fetch('/api/v1/tenants/export');
         const blob = await response.blob();
-        
+
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -354,7 +394,7 @@ async function exportTenants() {
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        
+
         window.showAlert('Tenant data exported successfully', 'success');
     } catch (error) {
         window.showAlert('Failed to export tenant data', 'danger');

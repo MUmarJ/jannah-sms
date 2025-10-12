@@ -4,16 +4,23 @@ Messages API endpoints for sending SMS and managing message history.
 
 import logging
 from datetime import datetime, timedelta
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from sqlalchemy.orm import Session
+from typing import Optional
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import desc
+from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.models.message import (
+    Message,
+    MessageReply,
+    MessageResponse,
+    MessageSend,
+    MessageStats,
+    MessageStatus,
+)
 from app.models.tenant import Tenant
-from app.models.message import Message, MessageStatus, MessageSend, MessageResponse, MessageStats, MessageReply
 from app.services.sms_service import sms_service
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -52,13 +59,13 @@ async def get_message_stats(db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        logger.error(f"Failed to get message stats: {str(e)}")
+        logger.error(f"Failed to get message stats: {e!s}")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve message statistics"
         )
 
 
-@router.get("/", response_model=List[MessageResponse])
+@router.get("/", response_model=list[MessageResponse])
 async def get_messages(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -108,7 +115,7 @@ async def get_messages(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get messages: {str(e)}")
+        logger.error(f"Failed to get messages: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to retrieve messages")
 
 
@@ -119,28 +126,37 @@ async def get_message(message_id: int, db: Session = Depends(get_db)):
         message = db.query(Message).filter(Message.id == message_id).first()
         if not message:
             raise HTTPException(status_code=404, detail="Message not found")
-        
+
         # Get tenant information
         tenant = db.query(Tenant).filter(Tenant.id == message.tenant_id).first()
-        
+
         # Get replies for this message
         replies = []
         if message.message_id:  # Only look for replies if we have a TextBelt message ID
-            message_replies = db.query(MessageReply).filter(
-                MessageReply.text_id == message.message_id
-            ).order_by(MessageReply.received_at.asc()).all()
-            
+            message_replies = (
+                db.query(MessageReply)
+                .filter(MessageReply.text_id == message.message_id)
+                .order_by(MessageReply.received_at.asc())
+                .all()
+            )
+
             replies = [
                 {
                     "id": reply.id,
                     "from_number": reply.from_number,
                     "reply_text": reply.reply_text,
-                    "received_at": reply.received_at.isoformat() if reply.received_at else None,
-                    "formatted_received_at": reply.received_at.strftime("%B %d, %Y at %I:%M %p") if reply.received_at else "Unknown"
+                    "received_at": (
+                        reply.received_at.isoformat() if reply.received_at else None
+                    ),
+                    "formatted_received_at": (
+                        reply.received_at.strftime("%B %d, %Y at %I:%M %p")
+                        if reply.received_at
+                        else "Unknown"
+                    ),
                 }
                 for reply in message_replies
             ]
-        
+
         # Format response according to MessageLogResponse schema
         formatted_response = {
             "id": message.id,
@@ -150,7 +166,11 @@ async def get_message(message_id: int, db: Session = Depends(get_db)):
             "message_content": message.content,
             "message_template": None,  # Not stored in current schema
             "message_type": "manual",  # Default value
-            "status": message.status if isinstance(message.status, str) else message.status.value,
+            "status": (
+                message.status
+                if isinstance(message.status, str)
+                else message.status.value
+            ),
             "scheduled_message_id": None,  # Not used in current schema
             "is_test_mode": message.test_mode or False,
             "job_id": None,  # Not used in current schema
@@ -162,15 +182,15 @@ async def get_message(message_id: int, db: Session = Depends(get_db)):
             "delivered_at": None,  # Not tracked in current schema
             "created_by": None,  # Not tracked in current schema
             "retry_count": 0,  # Not tracked in current schema
-            "replies": replies  # Add replies to response
+            "replies": replies,  # Add replies to response
         }
-        
+
         return formatted_response
-        
+
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get message {message_id}: {str(e)}")
+        logger.error(f"Failed to get message {message_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to retrieve message")
 
 
@@ -241,7 +261,7 @@ async def send_message(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to send messages: {str(e)}")
+        logger.error(f"Failed to send messages: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to send messages")
 
 
@@ -274,7 +294,7 @@ async def send_rent_reminders(
         }
 
     except Exception as e:
-        logger.error(f"Failed to send rent reminders: {str(e)}")
+        logger.error(f"Failed to send rent reminders: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to send rent reminders")
 
 
@@ -305,7 +325,7 @@ async def send_late_fee_notices(
         }
 
     except Exception as e:
-        logger.error(f"Failed to send late fee notices: {str(e)}")
+        logger.error(f"Failed to send late fee notices: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to send late fee notices")
 
 
@@ -332,7 +352,7 @@ async def cancel_scheduled_message(message_id: int, db: Session = Depends(get_db
         raise
     except Exception as e:
         db.rollback()
-        logger.error(f"Failed to cancel message {message_id}: {str(e)}")
+        logger.error(f"Failed to cancel message {message_id}: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to cancel message")
 
 
@@ -344,7 +364,7 @@ async def get_message_templates():
         return {"templates": templates}
 
     except Exception as e:
-        logger.error(f"Failed to get message templates: {str(e)}")
+        logger.error(f"Failed to get message templates: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get message templates")
 
 
@@ -356,7 +376,7 @@ async def test_sms_api(test_mode: bool = Query(True)):
         return result
 
     except Exception as e:
-        logger.error(f"Failed to test SMS API: {str(e)}")
+        logger.error(f"Failed to test SMS API: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to test SMS API")
 
 
@@ -368,14 +388,14 @@ async def get_sms_quota(test_mode: bool = Query(False)):
         return {"quota_remaining": quota}
 
     except Exception as e:
-        logger.error(f"Failed to get SMS quota: {str(e)}")
+        logger.error(f"Failed to get SMS quota: {e!s}")
         raise HTTPException(status_code=500, detail="Failed to get SMS quota")
 
 
 # Helper functions
 async def _get_eligible_tenants(
-    recipient_type: str, selected_tenants: Optional[List[int]], db: Session
-) -> List[Tenant]:
+    recipient_type: str, selected_tenants: Optional[list[int]], db: Session
+) -> list[Tenant]:
     """Get eligible tenants based on recipient type."""
     if recipient_type == "all":
         return db.query(Tenant).filter(Tenant.active == True).all()
@@ -415,11 +435,11 @@ def _parse_schedule_time(send_date: str, send_hour: int) -> datetime:
         scheduled_time = scheduled_time.replace(hour=send_hour)
         return scheduled_time
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid schedule time: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid schedule time: {e!s}")
 
 
 async def _send_immediate_messages(
-    tenants: List[Tenant], message: str, test_mode: bool, db: Session
+    tenants: list[Tenant], message: str, test_mode: bool, db: Session
 ):
     """Background task to send immediate messages."""
     try:
@@ -452,12 +472,12 @@ async def _send_immediate_messages(
         )
 
     except Exception as e:
-        logger.error(f"Failed to send immediate messages: {str(e)}")
+        logger.error(f"Failed to send immediate messages: {e!s}")
         db.rollback()
 
 
 async def _send_rent_reminders_task(
-    tenants: List[Tenant], test_mode: bool, db: Session
+    tenants: list[Tenant], test_mode: bool, db: Session
 ):
     """Background task to send rent reminders."""
     try:
@@ -494,11 +514,11 @@ async def _send_rent_reminders_task(
         )
 
     except Exception as e:
-        logger.error(f"Failed to send rent reminders: {str(e)}")
+        logger.error(f"Failed to send rent reminders: {e!s}")
         db.rollback()
 
 
-async def _send_late_notices_task(tenants: List[Tenant], test_mode: bool, db: Session):
+async def _send_late_notices_task(tenants: list[Tenant], test_mode: bool, db: Session):
     """Background task to send late fee notices."""
     try:
         result = await sms_service.send_late_fee_notices(
@@ -530,5 +550,5 @@ async def _send_late_notices_task(tenants: List[Tenant], test_mode: bool, db: Se
         )
 
     except Exception as e:
-        logger.error(f"Failed to send late fee notices: {str(e)}")
+        logger.error(f"Failed to send late fee notices: {e!s}")
         db.rollback()

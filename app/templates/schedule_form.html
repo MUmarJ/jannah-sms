@@ -23,35 +23,35 @@
 
 {% block content %}
     <div class="card">
-        <form method="post" 
+        <form method="post"
               action="{% if action == 'new' %}/schedules/new{% else %}/schedules/{{ schedule.id }}/edit{% endif %}"
               data-validate>
-            
+
             <!-- Basic Information -->
             <div style="margin-bottom: 32px;">
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     📋 Schedule Information
                 </h2>
-                
+
                 <div class="grid grid-2">
                     <div class="form-group">
                         <label for="name" class="form-label">Schedule Name *</label>
-                        <input type="text" 
-                               id="name" 
-                               name="name" 
-                               class="form-input" 
+                        <input type="text"
+                               id="name"
+                               name="name"
+                               class="form-input"
                                value="{% if schedule %}{{ schedule.name }}{% endif %}"
                                required
                                placeholder="Enter schedule name">
                         <div class="form-help">A descriptive name for this schedule</div>
                         <div class="form-error"></div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="schedule_type" class="form-label">Schedule Type *</label>
-                        <select id="schedule_type" 
-                                name="schedule_type" 
-                                class="form-select" 
+                        <select id="schedule_type"
+                                name="schedule_type"
+                                class="form-select"
                                 required>
                             <option value="">Select type...</option>
                             <option value="rent_reminder" {% if schedule and schedule.schedule_type == 'rent_reminder' %}selected{% endif %}>Rent Reminder</option>
@@ -63,12 +63,12 @@
                         <div class="form-error"></div>
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="description" class="form-label">Description</label>
-                    <textarea id="description" 
-                              name="description" 
-                              class="form-textarea" 
+                    <textarea id="description"
+                              name="description"
+                              class="form-textarea"
                               rows="3"
                               placeholder="Optional description of this schedule...">{% if schedule %}{{ schedule.description or '' }}{% endif %}</textarea>
                     <div class="form-help">Optional description of what this schedule does</div>
@@ -81,12 +81,12 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     💬 Message Template
                 </h2>
-                
+
                 <div class="form-group">
                     <label for="message_template" class="form-label">Message Content *</label>
-                    <textarea id="message_template" 
-                              name="message_template" 
-                              class="form-textarea" 
+                    <textarea id="message_template"
+                              name="message_template"
+                              class="form-textarea"
                               rows="6"
                               required
                               placeholder="Enter the message template...">{% if schedule %}{{ schedule.message_template }}{% endif %}</textarea>
@@ -102,12 +102,12 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     ⏰ Schedule Configuration
                 </h2>
-                
+
                 <div class="form-group">
                     <label for="schedule_frequency" class="form-label">Frequency *</label>
-                    <select id="schedule_frequency" 
-                            name="schedule_frequency" 
-                            class="form-select" 
+                    <select id="schedule_frequency"
+                            name="schedule_frequency"
+                            class="form-select"
                             required>
                         <option value="">Select frequency...</option>
                         <option value="daily">Daily</option>
@@ -124,32 +124,32 @@
                     <div class="schedule-time-wrapper" style="margin-top: 24px;">
                         <div class="form-group">
                             <label class="form-label">⏰ Execution Time</label>
-                            
+
                             <!-- Time selection method toggle -->
                             <div class="time-method-toggle" style="display: flex; gap: 20px; margin-bottom: 20px; justify-content: center;">
                                 <label class="radio-option" style="display: flex; align-items: center; gap: 8px; font-size: 16px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: background-color 0.2s;">
-                                    <input type="radio" 
-                                           name="schedule_time_method" 
-                                           value="preset" 
-                                           checked 
+                                    <input type="radio"
+                                           name="schedule_time_method"
+                                           value="preset"
+                                           checked
                                            onchange="toggleScheduleTimeMethod('preset')"
                                            style="transform: scale(1.2);">
                                     <span>Common Times</span>
                                 </label>
                                 <label class="radio-option" style="display: flex; align-items: center; gap: 8px; font-size: 16px; cursor: pointer; padding: 8px 16px; border-radius: 8px; transition: background-color 0.2s;">
-                                    <input type="radio" 
-                                           name="schedule_time_method" 
-                                           value="custom" 
+                                    <input type="radio"
+                                           name="schedule_time_method"
+                                           value="custom"
                                            onchange="toggleScheduleTimeMethod('custom')"
                                            style="transform: scale(1.2);">
                                     <span>Custom Time</span>
                                 </label>
                             </div>
-                            
+
                             <!-- Preset time selection -->
                             <div id="schedule_preset_time" class="preset-time-options">
                                 <div class="time-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                                    <button type="button" class="time-option" onclick="selectScheduleTime(9, 0)" data-time="9:00" 
+                                    <button type="button" class="time-option" onclick="selectScheduleTime(9, 0)" data-time="9:00"
                                             style="background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px 8px; cursor: pointer; transition: all 0.2s ease; text-align: center;">
                                         <span class="time" style="display: block; font-size: 18px; font-weight: 600; margin-bottom: 4px;">9:00 AM</span>
                                         <span class="desc" style="display: block; font-size: 14px; opacity: 0.8;">Morning</span>
@@ -166,30 +166,30 @@
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <!-- Custom time selection -->
                             <div id="schedule_custom_time" class="custom-time-controls" style="display: none; margin-top: 16px;">
                                 <div class="time-inputs" style="display: flex; gap: 16px; justify-content: center; align-items: start; flex-wrap: wrap;">
                                     <div class="hour-input" style="text-align: center;">
                                         <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #374151;">Hour</label>
-                                        <select name="schedule_hour" 
+                                        <select name="schedule_hour"
                                                 id="schedule_hour"
                                                 class="form-select time-select"
                                                 style="width: 100px; text-align: center; font-size: 16px;">
                                             <option value="">--</option>
                                             {% for hour in range(0, 24) %}
-                                                <option value="{{ hour }}" 
+                                                <option value="{{ hour }}"
                                                         {% if hour == 9 %}selected{% endif %}>
-                                                    {{ "{:02d}".format(hour) }} 
+                                                    {{ "{:02d}".format(hour) }}
                                                     ({{ hour | format_12hour }})
                                                 </option>
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    
+
                                     <div class="minute-input" style="text-align: center;">
                                         <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #374151;">Minute</label>
-                                        <select name="schedule_minute" 
+                                        <select name="schedule_minute"
                                                 id="schedule_minute"
                                                 class="form-select time-select"
                                                 style="width: 100px; text-align: center; font-size: 16px;">
@@ -201,7 +201,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Selected time display -->
                             <div class="selected-time-display" id="schedule_selected_time" style="margin-top: 16px; text-align: center;">
                                 <div class="selected-time-badge" style="display: inline-flex; align-items: center; gap: 8px; background: #ecfdf5; border: 2px solid #10b981; border-radius: 12px; padding: 12px 20px; font-size: 18px; font-weight: 600; color: #047857;">
@@ -209,7 +209,7 @@
                                     <span class="selected-time-text">9:00 AM (Morning)</span>
                                 </div>
                             </div>
-                            
+
                             <div class="form-help">Set the time when this schedule should run</div>
                             <div class="form-error"></div>
                         </div>
@@ -222,12 +222,12 @@
                 <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 20px; color: #1f2937;">
                     🎯 Target Conditions
                 </h2>
-                
+
                 <div class="form-group">
                     <label for="conditions_type" class="form-label">Send to *</label>
-                    <select id="conditions_type" 
-                            name="conditions_type" 
-                            class="form-select" 
+                    <select id="conditions_type"
+                            name="conditions_type"
+                            class="form-select"
                             required>
                         <option value="all_tenants">All Active Tenants</option>
                         <option value="unpaid_tenants">Tenants with Unpaid Rent</option>
@@ -237,7 +237,7 @@
                     <div class="form-help">Which tenants should receive these messages</div>
                     <div class="form-error"></div>
                 </div>
-                
+
                 {% if predefined_conditions %}
                     <div class="form-help" style="margin-top: 16px;">
                         <h4 style="margin-bottom: 8px;">Available Conditions:</h4>
@@ -280,11 +280,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form[data-validate]');
     const frequencySelect = document.getElementById('schedule_frequency');
     const timePickerDiv = document.getElementById('schedule_time_picker');
-    
+
     // Update time picker visibility based on frequency
     frequencySelect.addEventListener('change', function() {
         const frequency = this.value;
-        
+
         if (frequency === 'hourly') {
             timePickerDiv.style.display = 'none';
         } else if (frequency) {
@@ -293,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
             timePickerDiv.style.display = 'none';
         }
     });
-    
+
     // Initialize schedule time selector
     initializeScheduleTimeSelector();
 });
@@ -301,11 +301,11 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeScheduleTimeSelector() {
     // Set initial selected time (9:00 AM is pre-selected)
     updateScheduleSelectedTimeDisplay();
-    
+
     // Add event listeners for custom time inputs
     const hourSelect = document.getElementById('schedule_hour');
     const minuteSelect = document.getElementById('schedule_minute');
-    
+
     if (hourSelect) {
         hourSelect.addEventListener('change', function() {
             if (this.value !== '') {
@@ -314,7 +314,7 @@ function initializeScheduleTimeSelector() {
             }
         });
     }
-    
+
     if (minuteSelect) {
         minuteSelect.addEventListener('change', function() {
             selectedScheduleMinute = parseInt(this.value);
@@ -326,15 +326,15 @@ function initializeScheduleTimeSelector() {
 function toggleScheduleTimeMethod(method) {
     const presetDiv = document.getElementById('schedule_preset_time');
     const customDiv = document.getElementById('schedule_custom_time');
-    
+
     if (method === 'preset') {
         presetDiv.style.display = 'block';
         customDiv.style.display = 'none';
-        
+
         // Clear custom selections and set default
         document.getElementById('schedule_hour').value = '';
         document.getElementById('schedule_minute').value = '0';
-        
+
         // Select 9:00 AM by default
         selectedScheduleHour = 9;
         selectedScheduleMinute = 0;
@@ -342,7 +342,7 @@ function toggleScheduleTimeMethod(method) {
     } else {
         presetDiv.style.display = 'none';
         customDiv.style.display = 'block';
-        
+
         // Clear preset selections
         document.querySelectorAll('#schedule_preset_time .time-option').forEach(btn => {
             btn.classList.remove('selected');
@@ -350,19 +350,19 @@ function toggleScheduleTimeMethod(method) {
             btn.style.backgroundColor = 'white';
             btn.style.color = '';
         });
-        
+
         // Set custom selects to current values
         document.getElementById('schedule_hour').value = selectedScheduleHour;
         document.getElementById('schedule_minute').value = selectedScheduleMinute;
     }
-    
+
     updateScheduleSelectedTimeDisplay();
 }
 
 function selectScheduleTime(hour, minute) {
     selectedScheduleHour = hour;
     selectedScheduleMinute = minute;
-    
+
     // Clear other selections
     document.querySelectorAll('#schedule_preset_time .time-option').forEach(btn => {
         btn.classList.remove('selected');
@@ -370,7 +370,7 @@ function selectScheduleTime(hour, minute) {
         btn.style.backgroundColor = 'white';
         btn.style.color = '';
     });
-    
+
     // Select this time option
     selectScheduleTimeButton(hour, minute);
     updateScheduleSelectedTimeDisplay();
@@ -391,12 +391,12 @@ function updateScheduleSelectedTimeDisplay() {
     const display = document.getElementById('schedule_selected_time');
     const badge = display.querySelector('.selected-time-badge');
     const text = badge.querySelector('.selected-time-text');
-    
+
     if (selectedScheduleHour !== undefined && selectedScheduleHour !== '') {
         const time12h = formatScheduleTime12Hour(selectedScheduleHour, selectedScheduleMinute);
         const period = getTimePeriod(selectedScheduleHour);
         text.textContent = `${time12h} (${period})`;
-        
+
         badge.style.background = '#ecfdf5';
         badge.style.borderColor = '#10b981';
         badge.style.color = '#047857';
@@ -429,13 +429,13 @@ style.textContent = `
         border-color: #3b82f6 !important;
         background-color: #eff6ff !important;
     }
-    
+
     .radio-option:hover {
         background-color: #e5e7eb !important;
     }
 `;
 document.head.appendChild(style);
-    
+
     // Form submission validation
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -443,56 +443,56 @@ document.head.appendChild(style);
             const scheduleTypeSelect = document.getElementById('schedule_type');
             const messageTemplateInput = document.getElementById('message_template');
             const frequencySelect = document.getElementById('schedule_frequency');
-            
+
             let isValid = true;
-            
+
             // Clear previous errors
             document.querySelectorAll('.form-error').forEach(el => el.textContent = '');
             document.querySelectorAll('.form-input, .form-select, .form-textarea').forEach(el => el.classList.remove('error'));
-            
+
             // Validate required fields
             if (!nameInput.value.trim()) {
                 showError(nameInput, 'Schedule name is required');
                 isValid = false;
             }
-            
+
             if (!scheduleTypeSelect.value) {
                 showError(scheduleTypeSelect, 'Schedule type is required');
                 isValid = false;
             }
-            
+
             if (!messageTemplateInput.value.trim()) {
                 showError(messageTemplateInput, 'Message template is required');
                 isValid = false;
             }
-            
+
             if (!frequencySelect.value) {
                 showError(frequencySelect, 'Schedule frequency is required');
                 isValid = false;
             }
-            
+
             // Validate time inputs
             const hour = parseInt(hourInput.value);
             const minute = parseInt(minuteInput.value);
-            
+
             if (frequencySelect.value !== 'hourly') {
                 if (isNaN(hour) || hour < 0 || hour > 23) {
                     showError(hourInput, 'Hour must be between 0 and 23');
                     isValid = false;
                 }
-                
+
                 if (isNaN(minute) || minute < 0 || minute > 59) {
                     showError(minuteInput, 'Minute must be between 0 and 59');
                     isValid = false;
                 }
             }
-            
+
             if (!isValid) {
                 e.preventDefault();
             }
         });
     }
-    
+
     function showError(input, message) {
         input.classList.add('error');
         const errorDiv = input.parentNode.querySelector('.form-error');
@@ -501,7 +501,7 @@ document.head.appendChild(style);
             errorDiv.style.color = '#dc2626';
         }
     }
-    
+
     // Trigger initial frequency change
     frequencySelect.dispatchEvent(new Event('change'));
 });

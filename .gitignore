@@ -35,3 +35,20 @@ Thumbs.db
 *.csv
 config.json
 secrets.json
+
+# Virtual environments
+.conda/
+venv/
+env/
+ENV/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Pytest cache
+.pytest_cache/
+
+# Ruff cache
+.ruff_cache/
