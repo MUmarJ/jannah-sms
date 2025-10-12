@@ -2,9 +2,8 @@
 name = "jannah-sms-fastapi"
 version = "2.0.0"
 description = "Modern SMS scheduling system for property management with elderly-friendly interface"
-authors = [
-    {name = "Jannah SMS Team", email = "admin@jannah-sms.com"},
-]
+authors = [{ name = "Jannah SMS Team", email = "admin@jannah-sms.com" }]
+requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.13",
     "uvicorn[standard]>=0.32.1",
@@ -125,11 +124,11 @@ ignore = [
 "__init__.py" = ["F401", "F403"]
 "tests/*" = ["S101", "ARG001"]
 "migrations/*" = ["ALL"]
-"theme_switcher.py" = ["ALL"]  # utility script
-"**/check_*.py" = ["ALL"]  # utility scripts
-"**/manual_*.py" = ["ALL"]  # utility scripts
-"**/send_*.py" = ["ALL"]  # utility scripts
-"**/test_*.py" = ["ALL"]  # test scripts
+"theme_switcher.py" = ["ALL"]    # utility script
+"**/check_*.py" = ["ALL"]        # utility scripts
+"**/manual_*.py" = ["ALL"]       # utility scripts
+"**/send_*.py" = ["ALL"]         # utility scripts
+"**/test_*.py" = ["ALL"]         # test scripts
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
