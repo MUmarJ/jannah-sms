@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     sms_api_key: str = Field("", env="SMS_API_KEY")
     sms_api_base: str = Field("https://textbelt.com/text", env="SMS_API_BASE")
 
+    # Webhook Configuration (for receiving SMS replies)
+    webhook_url: str = Field("", env="WEBHOOK_URL")  # Your public webhook URL
+
 
     # Security
     jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")

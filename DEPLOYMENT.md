@@ -62,6 +62,9 @@ ADMIN_EMAIL=admin@yourdomain.com
 SMS_API_KEY=your-textbelt-api-key
 SMS_API_BASE=https://textbelt.com/text
 
+# Webhook for SMS Replies (set AFTER deployment)
+# WEBHOOK_URL=https://your-app-name.railway.app/api/v1/webhooks/sms-reply
+
 # Session Configuration
 SESSION_COOKIE_NAME=jannah_session
 SESSION_COOKIE_MAX_AGE=86400
@@ -124,6 +127,26 @@ Your app will be available at: `https://your-app-name.railway.app`
 2. Select a tenant
 3. Compose and send a test message
 4. Verify it arrives at the phone number
+
+### Configure Webhook (for SMS Replies)
+
+**Important:** This enables automatic opt-in/opt-out processing!
+
+1. After deployment, note your Railway URL: `https://your-app-name.railway.app`
+2. Go to Railway → **Variables**
+3. Add a new variable:
+   ```
+   WEBHOOK_URL=https://your-app-name.railway.app/api/v1/webhooks/sms-reply
+   ```
+4. Save and redeploy
+
+**What this enables:**
+- Tenants can reply "YES" to opt-in
+- Tenants can reply "STOP" to opt-out
+- All replies are saved and can be viewed in the app
+- Automatic compliance with A2P regulations
+
+See [WEBHOOK_SETUP.md](WEBHOOK_SETUP.md) for detailed webhook configuration.
 
 ## Monitoring & Logs
 

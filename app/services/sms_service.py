@@ -209,10 +209,9 @@ class SMSService:
             }
 
             # Add webhook URL for replies (only for non-test mode)
-            if not test_mode:
-                # In production, this should be your actual domain
-                webhook_url = "https://your-domain.com/api/v1/webhooks/sms-reply"
-                sms_data["replyWebhookUrl"] = webhook_url
+            if not test_mode and settings.webhook_url:
+                # Use configured webhook URL
+                sms_data["replyWebhookUrl"] = settings.webhook_url
 
             # Send SMS
             async with aiohttp.ClientSession() as session:
