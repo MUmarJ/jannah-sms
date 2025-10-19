@@ -27,7 +27,7 @@ def create_admin_user(
     Args:
         db: Database session
         username: Admin username
-        password: Admin password (will be hashed)
+        password: Admin password (will be hashed, auto-truncated to 72 bytes for bcrypt)
         email: Admin email
         full_name: Full name for admin user
 
@@ -39,6 +39,9 @@ def create_admin_user(
     if existing:
         logger.info(f"Admin user '{username}' already exists")
         return existing
+
+    # Truncate password to 72 bytes (bcrypt limit)
+    password = password[:72]
 
     # Create new admin user
     admin = UserDB(
