@@ -33,11 +33,6 @@ class Settings(BaseSettings):
     sms_api_key: str = Field("", env="SMS_API_KEY")
     sms_api_base: str = Field("https://textbelt.com/text", env="SMS_API_BASE")
 
-    # Supabase Configuration (Optional - for Supabase Auth integration)
-    supabase_url: str = Field("", env="SUPABASE_URL")
-    supabase_anon_key: str = Field("", env="SUPABASE_ANON_KEY")
-    supabase_service_role_key: str = Field("", env="SUPABASE_SERVICE_ROLE_KEY")
-    use_supabase_auth: bool = Field(False, env="USE_SUPABASE_AUTH")
 
     # Security
     jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
@@ -85,16 +80,6 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
-
-    @property
-    def formatted_footer(self) -> str:
-        """Get formatted footer message with company name."""
-        return self.footer_message.format(company_name=self.company_name)
-
-    @property
-    def supabase_configured(self) -> bool:
-        """Check if Supabase credentials are properly configured."""
-        return bool(self.supabase_url and self.supabase_anon_key)
 
     @property
     def is_production(self) -> bool:

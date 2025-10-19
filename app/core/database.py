@@ -1,6 +1,6 @@
 """
 Database configuration and connection management.
-Supports both SQLite (local dev) and PostgreSQL (Supabase/production).
+Supports both SQLite (local dev) and PostgreSQL (Railway/production).
 """
 
 import os
@@ -33,7 +33,7 @@ if is_sqlite:
         poolclass=NullPool,  # No connection pooling for SQLite
     )
 elif is_postgresql:
-    # PostgreSQL configuration (Supabase/Vercel production)
+    # PostgreSQL configuration (Railway production)
     engine = create_engine(
         settings.database_url,
         echo=settings.debug,
@@ -45,12 +45,6 @@ elif is_postgresql:
         connect_args={
             "connect_timeout": 10,
             "options": "-c timezone=utc",
-        }
-        if not settings.database_url.endswith("?sslmode=require")
-        else {
-            "connect_timeout": 10,
-            "options": "-c timezone=utc",
-            "sslmode": "require",
         },
     )
 else:

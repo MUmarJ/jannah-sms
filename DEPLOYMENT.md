@@ -1,200 +1,311 @@
-# Jannah SMS - Vercel Deployment Guide
+# Jannah SMS - Railway Deployment Guide
 
 ## Overview
-This guide covers deploying the Jannah SMS application to Vercel.
+This guide covers deploying the Jannah SMS application to Railway.app - the recommended platform for this application due to APScheduler's requirement for persistent processes.
+
+## Why Railway?
+- ✅ **Persistent Processes**: APScheduler requires a long-running process (not compatible with serverless)
+- ✅ **Simple Setup**: One-click PostgreSQL provisioning
+- ✅ **Auto-scaling**: Handles traffic spikes automatically
+- ✅ **Cost Effective**: ~$5-10/month for app + database
+- ✅ **Zero Configuration**: No need for separate API handlers
 
 ## Prerequisites
-- Vercel account ([sign up here](https://vercel.com))
-- Vercel CLI installed (optional): `npm install -g vercel`
-- PostgreSQL database (recommended: [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) or [Supabase](https://supabase.com))
+- Railway account ([sign up here](https://railway.app))
+- GitHub account (for deployment)
+- TextBelt API key ([get one here](https://textbelt.com))
 
-## Environment Variables
+## Quick Start (5 minutes)
 
-You need to set the following environment variables in your Vercel project:
+### 1. Push Code to GitHub
+```bash
+git add .
+git commit -m "Prepare for Railway deployment"
+git push origin main
+```
 
-### Required Variables
+### 2. Deploy to Railway
 
-1. **DATABASE_URL** - PostgreSQL connection string
-   ```
-   postgresql://username:password@host:port/database
-   ```
+1. Go to [railway.app](https://railway.app)
+2. Click **"Start a New Project"**
+3. Select **"Deploy from GitHub repo"**
+4. Choose your repository
+5. Railway will automatically detect the Python app
 
-2. **SMS_API_KEY** - TextBelt API key for sending SMS
-   ```
-   textbelt_api_key_here
-   ```
+### 3. Add PostgreSQL Database
 
-3. **SECRET_KEY** - Secret key for sessions/security
-   ```
-   your-secret-key-minimum-32-characters
-   ```
+1. In your Railway project dashboard, click **"+ New"**
+2. Select **"Database"** → **"PostgreSQL"**
+3. Railway will automatically:
+   - Provision a PostgreSQL instance
+   - Set the `DATABASE_URL` environment variable
+   - Connect it to your application
 
-### Optional Variables
+### 4. Configure Environment Variables
 
-4. **COMPANY_NAME** - Your company name (default: "Jannah Management")
-   ```
-   Your Company Name
-   ```
+In Railway dashboard → **Variables** tab, add:
 
-5. **DEBUG** - Debug mode (default: false)
-   ```
-   false
-   ```
+#### Required Variables
 
-## Deployment Steps
+```bash
+# Security (CRITICAL - Generate a strong key!)
+SECRET_KEY=your-secret-key-here-minimum-32-characters
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 
-### Option 1: Deploy via Vercel Dashboard (Recommended)
+# Admin User (Change password!)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-password-here
+ADMIN_EMAIL=admin@yourdomain.com
 
-1. **Push your code to GitHub/GitLab/Bitbucket**
-   ```bash
-   git add .
-   git commit -m "Prepare for Vercel deployment"
-   git push origin main
-   ```
+# SMS API
+SMS_API_KEY=your-textbelt-api-key
+SMS_API_BASE=https://textbelt.com/text
 
-2. **Import project in Vercel**
-   - Go to [vercel.com/new](https://vercel.com/new)
-   - Select your repository
-   - Vercel will auto-detect the configuration from `vercel.json`
+# Session Configuration
+SESSION_COOKIE_NAME=jannah_session
+SESSION_COOKIE_MAX_AGE=86400
+```
 
-3. **Configure Environment Variables**
-   - Go to Project Settings → Environment Variables
-   - Add all required environment variables listed above
+#### Optional Variables
 
-4. **Deploy**
-   - Click "Deploy"
-   - Wait for deployment to complete
+```bash
+# Application Branding
+APP_NAME=Jannah SMS Admin
+COMPANY_NAME=Your Company Name
+APP_VERSION=v2.0
+PRIMARY_COLOR=#3b82f6
 
-### Option 2: Deploy via Vercel CLI
+# Production Settings
+DEBUG=false
+LOG_LEVEL=INFO
+```
 
-1. **Install Vercel CLI**
-   ```bash
-   npm install -g vercel
-   ```
+**Note:** `DATABASE_URL` is automatically provided by Railway when you add PostgreSQL.
 
-2. **Login to Vercel**
-   ```bash
-   vercel login
-   ```
+### 5. Generate SECRET_KEY
 
-3. **Deploy**
-   ```bash
-   vercel
-   ```
+Run locally to generate a secure key:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
-4. **Add environment variables**
-   ```bash
-   vercel env add DATABASE_URL
-   vercel env add SMS_API_KEY
-   vercel env add SECRET_KEY
-   ```
+Copy the output and paste it as your `SECRET_KEY` in Railway.
 
-5. **Redeploy with environment variables**
-   ```bash
-   vercel --prod
-   ```
+### 6. Deploy!
 
-## Database Setup
+Railway will automatically:
+1. Install dependencies from `requirements.txt`
+2. Run database migrations
+3. Create admin user on first startup
+4. Start the scheduler service
+5. Deploy your application
 
-### Using Vercel Postgres
-
-1. **Create Postgres Database**
-   - Go to your Vercel project
-   - Navigate to Storage tab
-   - Create a new Postgres database
-
-2. **Copy Connection String**
-   - Vercel will provide a `DATABASE_URL`
-   - This is automatically added to your environment variables
-
-3. **Run Migrations**
-   The database tables will be automatically created on first run via `init_db()` in the application.
-
-### Using External Database (Supabase, Railway, etc.)
-
-1. Create a PostgreSQL database on your preferred provider
-2. Get the connection string
-3. Add it to Vercel environment variables as `DATABASE_URL`
+Your app will be available at: `https://your-app-name.railway.app`
 
 ## Post-Deployment
 
-### 1. Test the Application
-- Visit your Vercel URL (e.g., `https://your-app.vercel.app`)
-- Check the homepage loads correctly
-- Test tenant management features
+### First Login
 
-### 2. Configure SMS API
-- Update SMS API settings in the application
-- Test sending messages in test mode first
+1. Visit your Railway URL
+2. Login with your `ADMIN_USERNAME` and `ADMIN_PASSWORD`
+3. You should see the dashboard with 0 tenants
 
-### 3. Set up Opt-In Compliance
-- Go to Tenants page
-- Use the bulk opt-in selection to send opt-in requests
-- Track tenant opt-in status
+### Add Tenants
 
-## Important Notes
+1. Click **"Tenants"** in navigation
+2. Click **"Add Tenant"**
+3. Fill in tenant information
+4. Click **"Save"**
 
-### Limitations of Serverless
-1. **Stateless Functions** - Each request runs in a separate serverless function
-2. **Scheduler Service** - Background schedulers may not work in serverless mode
-   - Consider using Vercel Cron Jobs for scheduled tasks
-   - Or use external scheduler (e.g., GitHub Actions)
+### Test SMS
 
-3. **Database Connections** - Use connection pooling for better performance
-   - Recommended: Use Vercel Postgres with built-in pooling
-   - Or configure SQLAlchemy connection pool settings
+1. Go to **"Messages"** → **"Send Message"**
+2. Select a tenant
+3. Compose and send a test message
+4. Verify it arrives at the phone number
 
-### Vercel Cron Jobs (for scheduled messages)
+## Monitoring & Logs
 
-Create a file `vercel.json` cron section:
-```json
-{
-  "crons": [
-    {
-      "path": "/api/v1/schedules/execute",
-      "schedule": "0 9 * * *"
-    }
-  ]
-}
+### View Application Logs
+
+In Railway dashboard:
+1. Click on your service
+2. Go to **"Deployments"** tab
+3. Click on the latest deployment
+4. View real-time logs
+
+Look for:
+- ✅ Database initialized
+- ✅ Admin user created
+- ✅ Scheduler service started
+- ✅ Application startup complete
+
+### Common Log Messages
+
+**Success:**
 ```
+✅ Database initialized at: postgresql://...
+✅ Admin user created from environment variables
+⏰ Scheduler service started successfully
+✅ Application startup complete
+```
+
+**Issues:**
+```
+⚠️  NO USERS FOUND!
+🔧 Set ADMIN_PASSWORD in environment to auto-create admin
+```
+
+## Database Management
+
+### View Database
+
+Railway provides a built-in PostgreSQL client:
+1. Click on your PostgreSQL service
+2. Go to **"Data"** tab
+3. Browse tables and data
+
+### Backup Database
+
+Railway automatically backs up your database. To manually export:
+
+1. Install Railway CLI:
+   ```bash
+   npm install -g @railway/cli
+   ```
+
+2. Login:
+   ```bash
+   railway login
+   ```
+
+3. Link project:
+   ```bash
+   railway link
+   ```
+
+4. Connect to database:
+   ```bash
+   railway connect postgres
+   ```
+
+5. Export data:
+   ```bash
+   pg_dump $DATABASE_URL > backup.sql
+   ```
+
+## Custom Domain (Optional)
+
+1. In Railway dashboard → **Settings** → **Domains**
+2. Click **"Add Domain"**
+3. Enter your custom domain (e.g., `sms.yourdomain.com`)
+4. Add CNAME record to your DNS:
+   - Name: `sms` (or your subdomain)
+   - Value: Provided by Railway
+   - TTL: 300
+
+## Scaling
+
+Railway auto-scales based on traffic. To configure:
+
+1. Go to **Settings** → **Resources**
+2. Adjust:
+   - **Memory**: 512MB minimum (recommended: 1GB)
+   - **vCPU**: 1 vCPU minimum
+   - **Replicas**: 1 for starter, 2+ for production
+
+## Estimated Costs
+
+### Development/Testing
+- **App Instance**: $5/month (512MB RAM, 0.5 vCPU)
+- **PostgreSQL**: $5/month (Small instance)
+- **Total**: ~$10/month
+
+### Production (Small)
+- **App Instance**: $10/month (1GB RAM, 1 vCPU)
+- **PostgreSQL**: $10/month (Medium instance)
+- **Total**: ~$20/month
+
+Railway provides $5 free credits/month for hobby plan.
 
 ## Troubleshooting
 
-### Database Connection Issues
-- Check DATABASE_URL format is correct
-- Ensure database accepts external connections
-- Verify SSL requirements (add `?sslmode=require` if needed)
+### App won't start
 
-### SMS Not Sending
-- Verify SMS_API_KEY is correct
-- Check TextBelt quota
-- Test in test mode first
+**Check logs for errors:**
+```bash
+railway logs
+```
 
-### Static Files Not Loading
-- Ensure `app/templates/` and `app/static/` are not in `.vercelignore`
-- Check file paths in templates are correct
+**Common issues:**
+- Missing environment variables → Add in Railway dashboard
+- Database not connected → Ensure PostgreSQL service is added
+- Wrong Python version → Railway auto-detects from `runtime.txt`
 
-### Cold Starts
-- First request after inactivity may be slow
-- Consider upgrading to Vercel Pro for better performance
+### Database connection failed
 
-## Monitoring
+**Check DATABASE_URL:**
+```bash
+railway variables
+```
 
-- **Logs**: View logs in Vercel Dashboard → Deployments → Select deployment → Logs
-- **Analytics**: Enable Analytics in Project Settings
-- **Errors**: Check Error tracking in Vercel Dashboard
+Ensure it starts with `postgresql://` and is provided by Railway's PostgreSQL service.
+
+### Admin user not created
+
+**Check logs:**
+```
+⚠️  NO USERS FOUND!
+```
+
+**Solution:** Ensure `ADMIN_PASSWORD` is set in environment variables (not "changeme").
+
+### Scheduler not running
+
+**Check logs for:**
+```
+⏰ Scheduler service started successfully
+```
+
+**If missing:**
+- APScheduler failed to start
+- Check for errors in logs
+- Verify `requirements.txt` includes `apscheduler`
+
+## Security Checklist
+
+Before going to production:
+
+- [ ] Changed `ADMIN_PASSWORD` from default
+- [ ] Generated strong `SECRET_KEY` (32+ characters)
+- [ ] Set `DEBUG=false`
+- [ ] Using HTTPS (automatic on Railway)
+- [ ] Custom domain configured (optional)
+- [ ] Database backups enabled (automatic)
+- [ ] Reviewed environment variables
+- [ ] Tested SMS functionality
+- [ ] Tested schedule creation
 
 ## Support
 
-For issues with:
-- **Vercel Platform**: [Vercel Support](https://vercel.com/support)
-- **Application**: Create an issue on GitHub repository
-- **Database**: Refer to your database provider's documentation
+**Issues?** Check:
+- Railway Status: [status.railway.app](https://status.railway.app)
+- Railway Docs: [docs.railway.app](https://docs.railway.app)
+- Project Issues: [GitHub Issues](https://github.com/yourusername/jannah-sms/issues)
 
 ## Next Steps
 
-1. ✅ Set up custom domain in Vercel settings
-2. ✅ Configure SMS webhook for replies
-3. ✅ Enable Vercel Analytics
-4. ✅ Set up monitoring and alerts
-5. ✅ Regular backups of database
+1. ✅ Deploy to Railway
+2. ✅ Configure environment variables
+3. ✅ Test admin login
+4. ✅ Add tenants
+5. ✅ Send test messages
+6. ✅ Create scheduled messages
+7. 🎉 Monitor and maintain!
+
+---
+
+**Last Updated**: 2025-10-13
+**Platform**: Railway.app
+**Compatibility**: Jannah SMS v2.0+

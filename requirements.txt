@@ -8,8 +8,7 @@ sqlalchemy==2.0.36
 aiofiles==24.1.0
 
 # Database drivers
-psycopg2-binary==2.9.9  # PostgreSQL driver for Supabase/Vercel
-supabase==2.10.0  # Optional: Supabase client for Auth integration
+psycopg2-binary==2.9.9  # PostgreSQL driver for Railway/production
 
 # Scheduling and background tasks
 apscheduler
