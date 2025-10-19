@@ -7,16 +7,21 @@ pydantic-settings==2.7.0
 sqlalchemy==2.0.36
 aiofiles==24.1.0
 
+# Database drivers
+psycopg2-binary==2.9.9  # PostgreSQL driver for Supabase/Vercel
+supabase==2.10.0  # Optional: Supabase client for Auth integration
+
 # Scheduling and background tasks
 apscheduler
 
 # HTTP requests
 requests==2.32.3
-httpx==0.28.1
+httpx==0.27.2
 
 # Security and authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+slowapi==0.1.9  # Rate limiting
 
 # Configuration
 python-dotenv==1.0.1

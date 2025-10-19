@@ -50,7 +50,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
-        to_encode, settings.secret_key, algorithm=settings.algorithm
+        to_encode, settings.secret_key, algorithm=settings.jwt_algorithm
     )
     return encoded_jwt
 
@@ -59,12 +59,13 @@ def verify_token(token: str) -> Optional[dict]:
     """Verify and decode JWT token."""
     try:
         payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.algorithm]
+            token, settings.secret_key, algorithms=[settings.jwt_algorithm]
         )
         username: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
         if username is None:
             return None
-        return {"username": username}
+        return {"username": username, "user_id": user_id}
     except JWTError:
         return None
 
@@ -83,7 +84,7 @@ async def get_current_user_optional(
             return user
 
     # Check session cookie as fallback (elderly-friendly)
-    session_token = request.cookies.get("session_token")
+    session_token = request.cookies.get(settings.session_cookie_name)
     if session_token:
         user = verify_token(session_token)
         if user:
@@ -96,11 +97,11 @@ async def get_current_user(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> dict:
-    """Get current authenticated user or raise 401."""
+    """Get current authenticated user or raise 401/redirect."""
     user = await get_current_user_optional(request, credentials)
 
     if not user:
-        # For web interface, redirect to login instead of JSON error
+        # For API routes, return 401
         if request.url.path.startswith("/api/"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -108,8 +109,12 @@ async def get_current_user(
                 headers={"WWW-Authenticate": "Bearer"},
             )
         else:
-            # Redirect to login page for web interface
-            return RedirectResponse(url="/login", status_code=302)
+            # For web routes, raise exception that will trigger redirect
+            raise HTTPException(
+                status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+                detail="Not authenticated",
+                headers={"Location": "/login"},
+            )
 
     return user
 

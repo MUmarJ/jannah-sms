@@ -109,20 +109,34 @@
                 </p>
 
                 <div id="schedule_options" style="display: none;">
-                    <div class="form-group" style="margin: 0;">
-                        <label for="rent_day" class="form-label" style="font-size: 16px;">Rent Due Day Each
-                            Month</label>
-                        <select name="rent_day" id="rent_day" class="form-select">
-                            <option value="1">1st of each month</option>
-                            <option value="5" selected>5th of each month</option>
-                            <option value="10">10th of each month</option>
-                            <option value="15">15th of each month</option>
-                            <option value="20">20th of each month</option>
-                            <option value="25">25th of each month</option>
-                            <option value="30">30th of each month</option>
-                        </select>
-                        <div class="form-help">Example: If you select "5th", {rent_day} will be "August 5th" this month,
-                            "September 5th" next month</div>
+                    <div class="grid grid-2" style="gap: 16px;">
+                        <div class="form-group" style="margin: 0;">
+                            <label for="rent_day" class="form-label" style="font-size: 16px;">Send On (Day of Month)</label>
+                            <select name="rent_day" id="rent_day" class="form-select">
+                                <option value="1" selected>1st of each month</option>
+                                <option value="5">5th of each month</option>
+                                <option value="10">10th of each month</option>
+                                <option value="15">15th of each month</option>
+                                <option value="20">20th of each month</option>
+                                <option value="25">25th of each month</option>
+                                <option value="28">28th of each month</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label for="schedule_time_hour" class="form-label" style="font-size: 16px;">Send At (Time)</label>
+                            <select name="schedule_time_hour" id="schedule_time_hour" class="form-select">
+                                <option value="09:00" selected>09:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="14:00">02:00 PM</option>
+                                <option value="15:00">03:00 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-help" style="margin-top: 8px;">
+                        Example: Select "1st" and "09:00 AM" to send on the 1st of each month at 9 AM.
+                        Use {rent_day} in your message for dynamic dates like "November 1st", "December 1st".
                     </div>
                 </div>
             </div>

@@ -3,7 +3,7 @@ name = "jannah-sms-fastapi"
 version = "2.0.0"
 description = "Modern SMS scheduling system for property management with elderly-friendly interface"
 authors = [{ name = "Jannah SMS Team", email = "admin@jannah-sms.com" }]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.115.13",
     "uvicorn[standard]>=0.32.1",

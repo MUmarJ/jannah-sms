@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.core.templates import templates
 from app.models.tenant import Tenant
 
@@ -26,6 +27,7 @@ async def tenants_list(
     payment_status: Optional[str] = None,
     sort_by: Optional[str] = "name",
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Tenants list page with filtering and pagination."""
     try:
@@ -95,21 +97,22 @@ async def tenants_list(
                 "search": search,
                 "payment_status": payment_status,
                 "sort_by": sort_by,
+                "current_user": current_user,
             },
         )
 
     except Exception as e:
         logger.error(f"Tenants list error: {e!s}")
         return templates.TemplateResponse(
-            "error.html", {"request": request, "error": "Failed to load tenants"}
+            "error.html", {"request": request, "error": "Failed to load tenants", "current_user": current_user}
         )
 
 
 @router.get("/add", response_class=HTMLResponse)
-async def add_tenant_form(request: Request):
+async def add_tenant_form(request: Request, current_user: dict = Depends(get_current_user)):
     """Add tenant form page."""
     return templates.TemplateResponse(
-        "tenant_form.html", {"request": request, "action": "add", "tenant": None}
+        "tenant_form.html", {"request": request, "action": "add", "tenant": None, "current_user": current_user}
     )
 
 
@@ -126,6 +129,7 @@ async def add_tenant_submit(
     lease_end_date: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Handle add tenant form submission."""
     try:
@@ -176,7 +180,7 @@ async def add_tenant_submit(
 
 @router.get("/{tenant_id}/edit", response_class=HTMLResponse)
 async def edit_tenant_form(
-    tenant_id: int, request: Request, db: Session = Depends(get_db)
+    tenant_id: int, request: Request, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Edit tenant form page."""
     tenant = db.query(Tenant).filter(Tenant.id == tenant_id).first()
@@ -184,7 +188,7 @@ async def edit_tenant_form(
         return RedirectResponse(url="/tenants?error=tenant_not_found", status_code=302)
 
     return templates.TemplateResponse(
-        "tenant_form.html", {"request": request, "action": "edit", "tenant": tenant}
+        "tenant_form.html", {"request": request, "action": "edit", "tenant": tenant, "current_user": current_user}
     )
 
 
@@ -202,6 +206,7 @@ async def edit_tenant_submit(
     lease_end_date: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Handle edit tenant form submission."""
     try:
@@ -260,14 +265,14 @@ async def edit_tenant_submit(
 
 
 @router.get("/import", response_class=HTMLResponse)
-async def import_tenants_form(request: Request):
+async def import_tenants_form(request: Request, current_user: dict = Depends(get_current_user)):
     """Import tenants form page."""
-    return templates.TemplateResponse("tenant_import.html", {"request": request})
+    return templates.TemplateResponse("tenant_import.html", {"request": request, "current_user": current_user})
 
 
 @router.post("/import")
 async def import_tenants_submit(
-    request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)
+    request: Request, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Handle tenant import form submission."""
     try:

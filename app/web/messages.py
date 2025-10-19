@@ -8,9 +8,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.core.templates import templates
 from app.models.message import Message, MessageReply, MessageStatus
 from app.models.schedule import Schedule, ScheduleStatus
@@ -19,6 +22,7 @@ from app.services.sms_service import sms_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -30,6 +34,7 @@ async def messages_history(
     from_date: Optional[str] = None,
     to_date: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Messages history page with filtering."""
     try:
@@ -147,19 +152,20 @@ async def messages_history(
                 "message_history": formatted_messages,
                 "pagination": pagination,
                 "today": date.today().isoformat(),
+                "current_user": current_user,
             },
         )
 
     except Exception as e:
         logger.error(f"Messages history error: {e!s}")
         return templates.TemplateResponse(
-            "error.html", {"request": request, "error": "Failed to load messages"}
+            "error.html", {"request": request, "error": "Failed to load messages", "current_user": current_user}
         )
 
 
 @router.get("/send", response_class=HTMLResponse)
 async def send_message_form(
-    request: Request, tenant: Optional[int] = None, db: Session = Depends(get_db)
+    request: Request, tenant: Optional[int] = None, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Send message form page."""
     try:
@@ -175,6 +181,7 @@ async def send_message_form(
                 "tenants": tenants,
                 "today": date.today().isoformat(),
                 "selected_tenant": tenant,
+                "current_user": current_user,
             },
         )
 
@@ -182,10 +189,11 @@ async def send_message_form(
         logger.error(f"Send message form error: {e!s}")
         return templates.TemplateResponse(
             "error.html",
-            {"request": request, "error": "Failed to load send message form"},
+            {"request": request, "error": "Failed to load send message form", "current_user": current_user},
         )
 
 
+@limiter.limit("10/minute")
 @router.post("/send")
 async def send_message_submit(
     request: Request,
@@ -202,8 +210,10 @@ async def send_message_submit(
     send_minute: Optional[int] = Form(None),
     custom_minute: Optional[int] = Form(None),
     create_schedule: Optional[bool] = Form(False),
-    rent_day: Optional[int] = Form(5),
+    rent_day: Optional[int] = Form(1),
+    schedule_time_hour: Optional[str] = Form("09:00"),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Handle message send form submission."""
     try:
@@ -255,12 +265,15 @@ async def send_message_submit(
             # Create monthly schedule if requested
             if create_schedule:
                 try:
+                    # Monthly schedule requires format "DD HH:MM"
+                    schedule_value = f"{rent_day} {schedule_time_hour}"
+
                     schedule_name = f"Monthly Rent Reminder - Day {rent_day}"
                     schedule = Schedule(
                         name=schedule_name,
                         message_template=message,
                         schedule_type="monthly",
-                        schedule_value=str(rent_day),  # Store rent day
+                        schedule_value=schedule_value,  # Format: "DD HH:MM"
                         target_tenant_types=recipient_type,
                         status=ScheduleStatus.ACTIVE,
                         created_at=datetime.utcnow(),

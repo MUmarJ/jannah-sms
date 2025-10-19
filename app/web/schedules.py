@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.core.templates import templates
 from app.models.schedule import Schedule, ScheduleStatus
 from app.services.condition_service import condition_service
@@ -27,6 +28,7 @@ async def schedules_list(
     status: Optional[str] = None,
     schedule_type: Optional[str] = None,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Schedules list page with filtering and pagination."""
     try:
@@ -140,18 +142,19 @@ async def schedules_list(
                 "pagination": pagination,
                 "status": status,
                 "schedule_type": schedule_type,
+                "current_user": current_user,
             },
         )
 
     except Exception as e:
         logger.error(f"Schedules list error: {e!s}")
         return templates.TemplateResponse(
-            "error.html", {"request": request, "error": "Failed to load schedules"}
+            "error.html", {"request": request, "error": "Failed to load schedules", "current_user": current_user}
         )
 
 
 @router.get("/new", response_class=HTMLResponse)
-async def new_schedule_form(request: Request):
+async def new_schedule_form(request: Request, current_user: dict = Depends(get_current_user)):
     """New schedule form page."""
     try:
         # Get predefined conditions
@@ -164,13 +167,14 @@ async def new_schedule_form(request: Request):
                 "action": "new",
                 "schedule": None,
                 "predefined_conditions": predefined_conditions,
+                "current_user": current_user,
             },
         )
 
     except Exception as e:
         logger.error(f"New schedule form error: {e!s}")
         return templates.TemplateResponse(
-            "error.html", {"request": request, "error": "Failed to load schedule form"}
+            "error.html", {"request": request, "error": "Failed to load schedule form", "current_user": current_user}
         )
 
 
@@ -186,6 +190,7 @@ async def new_schedule_submit(
     schedule_minute: int = Form(0),
     conditions_type: str = Form("all_tenants"),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Handle new schedule form submission."""
     try:
@@ -225,7 +230,7 @@ async def new_schedule_submit(
 
 @router.get("/{schedule_id}/edit", response_class=HTMLResponse)
 async def edit_schedule_form(
-    schedule_id: int, request: Request, db: Session = Depends(get_db)
+    schedule_id: int, request: Request, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Edit schedule form page."""
     try:
@@ -245,6 +250,7 @@ async def edit_schedule_form(
                 "action": "edit",
                 "schedule": schedule,
                 "predefined_conditions": predefined_conditions,
+                "current_user": current_user,
             },
         )
 
@@ -252,7 +258,7 @@ async def edit_schedule_form(
         logger.error(f"Edit schedule form error: {e!s}")
         return templates.TemplateResponse(
             "error.html",
-            {"request": request, "error": "Failed to load schedule edit form"},
+            {"request": request, "error": "Failed to load schedule edit form", "current_user": current_user},
         )
 
 
@@ -269,6 +275,7 @@ async def edit_schedule_submit(
     schedule_minute: int = Form(0),
     conditions_type: str = Form("all_tenants"),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Handle edit schedule form submission."""
     try:
@@ -317,7 +324,7 @@ async def edit_schedule_submit(
 
 @router.get("/{schedule_id}", response_class=HTMLResponse)
 async def schedule_details(
-    schedule_id: int, request: Request, db: Session = Depends(get_db)
+    schedule_id: int, request: Request, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
 ):
     """Schedule details page."""
     try:
@@ -359,14 +366,14 @@ async def schedule_details(
 
         return templates.TemplateResponse(
             "schedule_details.html",
-            {"request": request, "schedule": formatted_schedule},
+            {"request": request, "schedule": formatted_schedule, "current_user": current_user},
         )
 
     except Exception as e:
         logger.error(f"Schedule details error: {e!s}")
         return templates.TemplateResponse(
             "error.html",
-            {"request": request, "error": "Failed to load schedule details"},
+            {"request": request, "error": "Failed to load schedule details", "current_user": current_user},
         )
 
 

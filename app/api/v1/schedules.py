@@ -11,6 +11,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.schedule import (
     Schedule,
     ScheduleCreate,
@@ -27,7 +28,9 @@ router = APIRouter()
 
 
 @router.get("/stats", response_model=ScheduleStats)
-async def get_schedule_stats(db: Session = Depends(get_db)):
+async def get_schedule_stats(
+    db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
+):
     """Get schedule statistics for dashboard."""
     try:
         active_schedules = (
@@ -66,6 +69,7 @@ async def get_schedules(
     status: Optional[str] = Query(None),
     schedule_type: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Get list of schedules with filtering and pagination."""
     try:
@@ -95,7 +99,11 @@ async def get_schedules(
 
 
 @router.get("/{schedule_id}", response_model=ScheduleResponse)
-async def get_schedule(schedule_id: int, db: Session = Depends(get_db)):
+async def get_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Get single schedule by ID."""
     schedule = db.query(Schedule).filter(Schedule.id == schedule_id).first()
     if not schedule:
@@ -104,7 +112,11 @@ async def get_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/", response_model=ScheduleResponse)
-async def create_schedule(schedule_data: ScheduleCreate, db: Session = Depends(get_db)):
+async def create_schedule(
+    schedule_data: ScheduleCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Create new automated schedule."""
     try:
         # Create schedule
@@ -135,7 +147,10 @@ async def create_schedule(schedule_data: ScheduleCreate, db: Session = Depends(g
 
 @router.put("/{schedule_id}", response_model=ScheduleResponse)
 async def update_schedule(
-    schedule_id: int, schedule_data: ScheduleUpdate, db: Session = Depends(get_db)
+    schedule_id: int,
+    schedule_data: ScheduleUpdate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Update schedule configuration."""
     try:
@@ -174,7 +189,11 @@ async def update_schedule(
 
 
 @router.delete("/{schedule_id}")
-async def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
+async def delete_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Delete schedule."""
     try:
         success = await scheduler_service.delete_schedule(schedule_id, db)
@@ -192,7 +211,11 @@ async def delete_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{schedule_id}/pause")
-async def pause_schedule(schedule_id: int, db: Session = Depends(get_db)):
+async def pause_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Pause a schedule."""
     try:
         success = await scheduler_service.pause_schedule(schedule_id, db)
@@ -210,7 +233,11 @@ async def pause_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{schedule_id}/resume")
-async def resume_schedule(schedule_id: int, db: Session = Depends(get_db)):
+async def resume_schedule(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Resume a paused schedule."""
     try:
         success = await scheduler_service.resume_schedule(schedule_id, db)
@@ -228,7 +255,11 @@ async def resume_schedule(schedule_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{schedule_id}/run")
-async def run_schedule_now(schedule_id: int, db: Session = Depends(get_db)):
+async def run_schedule_now(
+    schedule_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Run a schedule immediately."""
     try:
         result = await scheduler_service.run_schedule_now(schedule_id, db)
@@ -257,7 +288,9 @@ async def run_schedule_now(schedule_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/pause-all")
-async def pause_all_schedules(db: Session = Depends(get_db)):
+async def pause_all_schedules(
+    db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
+):
     """Pause all active schedules."""
     try:
         active_schedules = (
@@ -279,7 +312,9 @@ async def pause_all_schedules(db: Session = Depends(get_db)):
 
 
 @router.post("/resume-all")
-async def resume_all_schedules(db: Session = Depends(get_db)):
+async def resume_all_schedules(
+    db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
+):
     """Resume all paused schedules."""
     try:
         paused_schedules = (
@@ -301,7 +336,9 @@ async def resume_all_schedules(db: Session = Depends(get_db)):
 
 
 @router.get("/{schedule_id}/job-status")
-async def get_job_status(schedule_id: int):
+async def get_job_status(
+    schedule_id: int, current_user: dict = Depends(get_current_user)
+):
     """Get status of schedule's background job."""
     try:
         status = scheduler_service.get_job_status(schedule_id)
@@ -320,7 +357,7 @@ async def get_job_status(schedule_id: int):
 
 
 @router.get("/jobs/all")
-async def get_all_jobs():
+async def get_all_jobs(current_user: dict = Depends(get_current_user)):
     """Get status of all scheduled jobs."""
     try:
         jobs = scheduler_service.get_all_jobs()
@@ -333,7 +370,9 @@ async def get_all_jobs():
 
 @router.post("/test-conditions")
 async def test_schedule_conditions(
-    conditions: dict[str, Any], db: Session = Depends(get_db)
+    conditions: dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Test schedule conditions and see which tenants would match."""
     try:
@@ -346,7 +385,7 @@ async def test_schedule_conditions(
 
 
 @router.get("/conditions/predefined")
-async def get_predefined_conditions():
+async def get_predefined_conditions(current_user: dict = Depends(get_current_user)):
     """Get list of predefined condition sets."""
     try:
         conditions = condition_service.get_predefined_conditions()
@@ -360,7 +399,7 @@ async def get_predefined_conditions():
 
 
 @router.get("/types/available")
-async def get_available_schedule_types():
+async def get_available_schedule_types(current_user: dict = Depends(get_current_user)):
     """Get available schedule types and their descriptions."""
     return {
         "schedule_types": {
@@ -400,7 +439,9 @@ async def get_available_schedule_types():
 
 @router.get("/executions/recent")
 async def get_recent_executions(
-    limit: int = Query(10, ge=1, le=50), db: Session = Depends(get_db)
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Get recent schedule executions."""
     try:
@@ -439,7 +480,11 @@ async def get_recent_executions(
 
 
 @router.get("/executions/{execution_id}")
-async def get_execution_details(execution_id: str, db: Session = Depends(get_db)):
+async def get_execution_details(
+    execution_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Get detailed execution information."""
     try:
         # Parse execution ID (format: exec_{schedule_id}_{execution_count})

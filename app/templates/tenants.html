@@ -35,11 +35,12 @@
                 </select>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label for="sort_by" class="form-label">Sort By</label>
-                <select id="sort_by" class="form-select">
-                    <option value="name">Name (A-Z)</option>
-                    <option value="unit">Unit Number</option>
-                    <option value="payment_date">Last Payment</option>
+                <label for="opt_in_status" class="form-label">SMS Opt-In Status</label>
+                <select id="opt_in_status" class="form-select">
+                    <option value="">All Tenants</option>
+                    <option value="opted_in">Opted In</option>
+                    <option value="pending">Pending</option>
+                    <option value="opted_out">Opted Out</option>
                 </select>
             </div>
         </div>
@@ -76,6 +77,10 @@
                 <table class="table">
                     <thead>
                         <tr>
+                            <th style="width: 40px;">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleAllCheckboxes()"
+                                       style="transform: scale(1.3); cursor: pointer;">
+                            </th>
                             <th>Tenant</th>
                             <th>Unit</th>
                             <th>Contact</th>
@@ -91,7 +96,14 @@
                                 data-unit="{{ tenant.unit_number or '' }}"
                                 data-phone="{{ tenant.phone or '' }}"
                                 data-payment="{{ 'paid' if tenant.is_current_month_rent_paid else 'unpaid' }}"
-                                data-late="{{ 'true' if tenant.late_fee_applicable else 'false' }}">
+                                data-late="{{ 'true' if tenant.late_fee_applicable else 'false' }}"
+                                data-optin="{{ tenant.sms_opt_in_status or 'pending' }}"
+                                data-tenant-id="{{ tenant.id }}">
+                                <td>
+                                    <input type="checkbox" class="tenant-checkbox" value="{{ tenant.id }}"
+                                           onchange="updateSelectedCount()"
+                                           style="transform: scale(1.3); cursor: pointer;">
+                                </td>
                                 <td>
                                     <div style="font-weight: 600; font-size: 18px;">{{ tenant.name }}</div>
                                     {% if tenant.email %}
@@ -179,10 +191,17 @@
                                                 onclick="editTenant({{ tenant.id }})">
                                             ✏️ Edit
                                         </button>
-                                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 16px;"
-                                                onclick="sendMessage({{ tenant.id }}, '{{ tenant.name }}')">
-                                            💬 SMS
-                                        </button>
+                                        {% if tenant.sms_opt_in_status == "pending" or not tenant.initial_opt_in_message_sent %}
+                                            <button class="btn btn-warning" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="sendOptInMessage({{ tenant.id }}, '{{ tenant.name }}')">
+                                                📤 Send Opt-In
+                                            </button>
+                                        {% elif tenant.sms_opt_in_status == "opted_in" %}
+                                            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="sendMessage({{ tenant.id }}, '{{ tenant.name }}')">
+                                                💬 SMS
+                                            </button>
+                                        {% endif %}
                                         {% if not tenant.is_current_month_rent_paid %}
                                             <button class="btn btn-success" style="padding: 6px 12px; font-size: 16px;"
                                                     onclick="markPaid({{ tenant.id }})">
@@ -234,12 +253,37 @@
     {% if tenants %}
         <div class="card" style="margin-top: 32px;">
             <h2 style="margin-bottom: 16px;">🔧 Bulk Actions</h2>
+
+            <!-- Opt-In Selection -->
+            <div style="background: #fef3c7; border: 2px solid #f59e0b; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 12px 0; font-size: 20px; color: #92400e;">📤 Send Opt-In Requests</h3>
+                <p style="color: #78350f; margin-bottom: 16px; font-size: 16px;">
+                    Select tenants to send opt-in requests. You can manually select or use quick filters.
+                </p>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" onclick="selectAllPending()">
+                        ✅ Select All Pending
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="selectAllVisible()">
+                        ✅ Select All Visible
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearSelection()">
+                        ❌ Clear Selection
+                    </button>
+                    <button type="button" class="btn btn-warning btn-large" onclick="sendSelectedOptIn()">
+                        📤 Send to Selected (<span id="selectedCount">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Other Bulk Actions -->
             <div class="grid grid-3">
-                <button class="btn btn-primary btn-large" onclick="markAllPaid()">
-                    ✅ Mark All as Paid
+                <button class="btn btn-primary btn-large" onclick="sendRentReminders()">
+                    💬 Send Rent Reminders (Opted-In Only)
                 </button>
-                <button class="btn btn-warning btn-large" onclick="sendRentReminders()">
-                    📤 Send Rent Reminders
+                <button class="btn btn-success btn-large" onclick="markAllPaid()">
+                    ✅ Mark All as Paid
                 </button>
                 <button class="btn btn-secondary btn-large" onclick="exportTenants()">
                     📊 Export to Excel
@@ -251,10 +295,117 @@
 
 {% block extra_js %}
 <script>
+// Tenant selection functionality
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.tenant-checkbox:checked');
+    const count = checkboxes.length;
+    document.getElementById('selectedCount').textContent = count;
+
+    // Update "select all" checkbox state
+    const allCheckboxes = document.querySelectorAll('.tenant-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    if (count === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (count === allCheckboxes.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+}
+
+function toggleAllCheckboxes() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const checkboxes = document.querySelectorAll('.tenant-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+    });
+    updateSelectedCount();
+}
+
+function selectAllPending() {
+    document.querySelectorAll('.tenant-checkbox').forEach(cb => {
+        const row = cb.closest('tr');
+        if (row.dataset.optin === 'pending') {
+            cb.checked = true;
+        }
+    });
+    updateSelectedCount();
+}
+
+function selectAllVisible() {
+    document.querySelectorAll('.tenant-checkbox').forEach(cb => {
+        const row = cb.closest('tr');
+        if (row.style.display !== 'none') {
+            cb.checked = true;
+        }
+    });
+    updateSelectedCount();
+}
+
+function clearSelection() {
+    document.querySelectorAll('.tenant-checkbox').forEach(cb => {
+        cb.checked = false;
+    });
+    document.getElementById('selectAllCheckbox').checked = false;
+    updateSelectedCount();
+}
+
+async function sendSelectedOptIn() {
+    const checkboxes = document.querySelectorAll('.tenant-checkbox:checked');
+    const tenantIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+
+    if (tenantIds.length === 0) {
+        window.showAlert('Please select at least one tenant', 'warning');
+        return;
+    }
+
+    const confirmed = await App.confirm(
+        `Send opt-in request messages to ${tenantIds.length} selected tenant(s)?`,
+        'Send Opt-In Requests'
+    );
+
+    if (!confirmed) return;
+
+    try {
+        let sentCount = 0;
+        let failedCount = 0;
+
+        for (const tenantId of tenantIds) {
+            try {
+                await App.apiCall(`/api/v1/tenants/${tenantId}/send-opt-in`, {
+                    method: 'POST'
+                });
+                sentCount++;
+            } catch (error) {
+                failedCount++;
+                console.error(`Failed to send to tenant ${tenantId}:`, error);
+            }
+        }
+
+        if (sentCount > 0) {
+            window.showAlert(
+                `Successfully sent opt-in requests to ${sentCount} tenant(s)` +
+                (failedCount > 0 ? ` (${failedCount} failed)` : ''),
+                failedCount > 0 ? 'warning' : 'success'
+            );
+            setTimeout(() => window.location.reload(), 1500);
+        } else {
+            window.showAlert('Failed to send any opt-in messages', 'danger');
+        }
+    } catch (error) {
+        window.showAlert('Failed to send opt-in messages', 'danger');
+        console.error(error);
+    }
+}
+
 // Search and filter functionality
 function filterTenants() {
     const searchTerm = document.getElementById('search').value.toLowerCase();
     const paymentStatus = document.getElementById('payment_status').value;
+    const optInStatus = document.getElementById('opt_in_status').value;
     const rows = document.querySelectorAll('#tenant-table-body tr');
 
     rows.forEach(row => {
@@ -270,7 +421,12 @@ function filterTenants() {
             matchesPayment = row.dataset.late === 'true';
         }
 
-        row.style.display = (matchesSearch && matchesPayment) ? '' : 'none';
+        let matchesOptIn = true;
+        if (optInStatus !== '') {
+            matchesOptIn = row.dataset.optin === optInStatus;
+        }
+
+        row.style.display = (matchesSearch && matchesPayment && matchesOptIn) ? '' : 'none';
     });
 }
 
@@ -308,7 +464,7 @@ function sortTenants() {
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('search').addEventListener('input', filterTenants);
     document.getElementById('payment_status').addEventListener('change', filterTenants);
-    document.getElementById('sort_by').addEventListener('change', sortTenants);
+    document.getElementById('opt_in_status').addEventListener('change', filterTenants);
 });
 
 // Edit tenant
@@ -361,10 +517,50 @@ async function markAllPaid() {
     }
 }
 
-// Send rent reminders
+// Send opt-in message to single tenant
+async function sendOptInMessage(tenantId, tenantName) {
+    const confirmed = await App.confirm(
+        `Send opt-in request message to ${tenantName}?`,
+        'Send Opt-In Request'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/tenants/${tenantId}/send-opt-in`, {
+                method: 'POST'
+            });
+            window.showAlert('Opt-in message sent successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to send opt-in message', 'danger');
+        }
+    }
+}
+
+// Send bulk opt-in messages
+async function sendBulkOptInMessages() {
+    const confirmed = await App.confirm(
+        'Send opt-in request messages to all tenants with pending opt-in status? This will only send to tenants who haven\'t received the opt-in message yet.',
+        'Send Bulk Opt-In Requests'
+    );
+
+    if (confirmed) {
+        try {
+            const response = await App.apiCall('/api/v1/tenants/send-bulk-opt-in', {
+                method: 'POST'
+            });
+            window.showAlert(`Sent opt-in requests to ${response.count || 0} tenants`, 'success');
+            setTimeout(() => window.location.reload(), 1500);
+        } catch (error) {
+            window.showAlert('Failed to send bulk opt-in messages', 'danger');
+        }
+    }
+}
+
+// Send rent reminders (only to opted-in tenants)
 async function sendRentReminders() {
     const confirmed = await App.confirm(
-        'Send rent reminder messages to all tenants who haven\'t paid yet?',
+        'Send rent reminder messages to all opted-in tenants who haven\'t paid yet? (Tenants who haven\'t opted in will be skipped for compliance)',
         'Send Rent Reminders'
     );
 
@@ -373,7 +569,7 @@ async function sendRentReminders() {
             const response = await App.apiCall('/api/v1/messages/send-rent-reminders', {
                 method: 'POST'
             });
-            window.showAlert(`Sent reminders to ${response.count} tenants`, 'success');
+            window.showAlert(`Sent reminders to ${response.count || 0} tenants (${response.skipped || 0} skipped - not opted in)`, 'success');
         } catch (error) {
             window.showAlert('Failed to send rent reminders', 'danger');
         }

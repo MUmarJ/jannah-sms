@@ -112,23 +112,21 @@ class SMSService:
             current_due_date.strftime("%B %d") if current_due_date else "the due date"
         )
 
-        # Calculate dynamic rent_day - always use current month with specified day
-        rent_day_num = kwargs.get("rent_day", 5)  # Default to 5th
+        # Calculate dynamic rent_day - always use first day of next month
         today = date.today()
-        current_month_rent_day = today.replace(
-            day=min(rent_day_num, 28)
-        )  # Cap at 28 to avoid month-end issues
-        formatted_rent_day = current_month_rent_day.strftime("%B %d")
+        if today.month == 12:
+            next_month = today.replace(year=today.year + 1, month=1, day=1)
+        else:
+            next_month = today.replace(month=today.month + 1, day=1)
+        formatted_rent_day = next_month.strftime("%B %d")
 
         # For display with ordinal suffix
-        day = current_month_rent_day.day
+        day = next_month.day
         if 10 <= day % 100 <= 20:
             suffix = "th"
         else:
             suffix = {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
-        formatted_rent_day_ordinal = (
-            f"{current_month_rent_day.strftime('%B')} {day}{suffix}"
-        )
+        formatted_rent_day_ordinal = f"{next_month.strftime('%B')} {day}{suffix}"
 
         replacements = {
             # Original placeholders

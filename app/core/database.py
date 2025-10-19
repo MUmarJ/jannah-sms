@@ -1,5 +1,6 @@
 """
 Database configuration and connection management.
+Supports both SQLite (local dev) and PostgreSQL (Supabase/production).
 """
 
 import os
@@ -7,21 +8,58 @@ import os
 from sqlalchemy import MetaData, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool, QueuePool
 
 from app.core.config import settings
 
-# Create database directory if it doesn't exist
-db_path = settings.database_url.replace("sqlite:///", "")
-db_dir = os.path.dirname(db_path)
-if db_dir and not os.path.exists(db_dir):
-    os.makedirs(db_dir)
+# Determine database type from URL
+is_sqlite = settings.database_url.startswith("sqlite")
+is_postgresql = settings.database_url.startswith("postgresql")
 
-# Create SQLAlchemy engine
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False},  # For SQLite
-    echo=settings.debug,  # Log SQL queries in debug mode
-)
+# Create database directory for SQLite (local development)
+if is_sqlite:
+    db_path = settings.database_url.replace("sqlite:///", "")
+    db_dir = os.path.dirname(db_path)
+    if db_dir and not os.path.exists(db_dir):
+        os.makedirs(db_dir)
+
+# Configure engine based on database type
+if is_sqlite:
+    # SQLite configuration (local development)
+    engine = create_engine(
+        settings.database_url,
+        connect_args={"check_same_thread": False},
+        echo=settings.debug,
+        poolclass=NullPool,  # No connection pooling for SQLite
+    )
+elif is_postgresql:
+    # PostgreSQL configuration (Supabase/Vercel production)
+    engine = create_engine(
+        settings.database_url,
+        echo=settings.debug,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_size=5,  # Number of connections to maintain
+        max_overflow=10,  # Additional connections if pool is full
+        pool_recycle=3600,  # Recycle connections after 1 hour
+        poolclass=QueuePool,  # Connection pooling for PostgreSQL
+        connect_args={
+            "connect_timeout": 10,
+            "options": "-c timezone=utc",
+        }
+        if not settings.database_url.endswith("?sslmode=require")
+        else {
+            "connect_timeout": 10,
+            "options": "-c timezone=utc",
+            "sslmode": "require",
+        },
+    )
+else:
+    # Fallback for other database types
+    engine = create_engine(
+        settings.database_url,
+        echo=settings.debug,
+        poolclass=QueuePool,
+    )
 
 # Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

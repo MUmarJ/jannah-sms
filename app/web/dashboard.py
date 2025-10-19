@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.core.templates import get_template_context, templates
 from app.models.message import Message, MessageStatus
 from app.models.schedule import Schedule, ScheduleStatus
@@ -21,7 +22,11 @@ router = APIRouter()
 
 
 @router.get("/dashboard", response_class=HTMLResponse)
-async def dashboard_page(request: Request, db: Session = Depends(get_db)):
+async def dashboard_page(
+    request: Request,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Main dashboard page with overview statistics."""
     try:
         # Get dashboard statistics
@@ -102,6 +107,7 @@ async def dashboard_page(request: Request, db: Session = Depends(get_db)):
             "dashboard.html",
             get_template_context(
                 request,
+                current_user=current_user,
                 stats=stats,
                 recent_messages=formatted_messages,
                 upcoming_schedules=formatted_schedules,

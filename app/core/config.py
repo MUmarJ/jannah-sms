@@ -33,13 +33,22 @@ class Settings(BaseSettings):
     sms_api_key: str = Field("", env="SMS_API_KEY")
     sms_api_base: str = Field("https://textbelt.com/text", env="SMS_API_BASE")
 
+    # Supabase Configuration (Optional - for Supabase Auth integration)
+    supabase_url: str = Field("", env="SUPABASE_URL")
+    supabase_anon_key: str = Field("", env="SUPABASE_ANON_KEY")
+    supabase_service_role_key: str = Field("", env="SUPABASE_SERVICE_ROLE_KEY")
+    use_supabase_auth: bool = Field(False, env="USE_SUPABASE_AUTH")
+
     # Security
     jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
     access_token_expire_minutes: int = Field(60, env="ACCESS_TOKEN_EXPIRE_MINUTES")
+    session_cookie_name: str = Field("jannah_session", env="SESSION_COOKIE_NAME")
+    session_cookie_max_age: int = Field(86400, env="SESSION_COOKIE_MAX_AGE")  # 24 hours
 
-    # Admin User Credentials
+    # Admin User Credentials (for initial setup)
     admin_username: str = Field("admin", env="ADMIN_USERNAME")
-    admin_password: str = Field("admin", env="ADMIN_PASSWORD")
+    admin_password: str = Field("changeme", env="ADMIN_PASSWORD")
+    admin_email: str = Field("admin@jannah-sms.com", env="ADMIN_EMAIL")
 
     # UI Configuration for elderly users
     ui_large_fonts: bool = Field(True, env="UI_LARGE_FONTS")
@@ -83,15 +92,14 @@ class Settings(BaseSettings):
         return self.footer_message.format(company_name=self.company_name)
 
     @property
-    def onedrive_configured(self) -> bool:
-        """Check if OneDrive credentials are properly configured."""
-        return all(
-            [
-                self.microsoft_client_id,
-                self.microsoft_client_secret,
-                self.microsoft_tenant_id,
-            ]
-        )
+    def supabase_configured(self) -> bool:
+        """Check if Supabase credentials are properly configured."""
+        return bool(self.supabase_url and self.supabase_anon_key)
+
+    @property
+    def is_production(self) -> bool:
+        """Check if running in production mode."""
+        return not self.debug and self.database_url.startswith("postgresql")
 
     @property
     def theme_context(self) -> dict:

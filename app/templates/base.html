@@ -72,7 +72,28 @@
                         ⏰ Schedules
                     </a>
                 </li>
+                {% if current_user and current_user.is_admin %}
+                <li role="none">
+                    <a href="/users"
+                        class="nav-item {% if request.url.path.startswith('/users') %}active{% endif %}"
+                        role="menuitem">
+                        🔑 Users
+                    </a>
+                </li>
+                {% endif %}
             </ul>
+
+            <!-- User info and logout -->
+            {% if current_user %}
+            <div style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
+                <div style="font-size: 20px; color: #374151; font-weight: 600;">
+                    <span>👤 {{ current_user.username }}</span>
+                </div>
+                <a href="/logout" class="btn" style="font-size: 18px; padding: 12px 24px; background: #ef4444; color: white; text-decoration: none; border-radius: 8px;">
+                    Logout
+                </a>
+            </div>
+            {% endif %}
         </div>
     </nav>
 

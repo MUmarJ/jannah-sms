@@ -25,8 +25,9 @@ class UserDB(Base):
     hashed_password = Column(String(255), nullable=False)
 
     # User status
-    is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=True)  # For now, all users are admins
+    is_active = Column(Boolean, default=False)  # Requires admin approval
+    is_admin = Column(Boolean, default=False)  # Regular users by default
+    pending_approval = Column(Boolean, default=True)  # Tracks if awaiting approval
 
     # Login tracking
     last_login = Column(DateTime, nullable=True)
@@ -52,7 +53,7 @@ class UserBase(BaseModel):
     username: str
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
-    is_active: bool = True
+    is_active: bool = False  # Inactive by default, requires approval
     ui_large_text: bool = True
     ui_high_contrast: bool = True
     ui_simple_mode: bool = True
@@ -179,39 +180,3 @@ class UserLoginResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserResponse
-
-
-class Token(BaseModel):
-    """Schema for JWT token."""
-
-    access_token: str
-    token_type: str = "bearer"
-    expires_in: int
-
-
-class TokenData(BaseModel):
-    """Schema for token payload data."""
-
-    username: Optional[str] = None
-    exp: Optional[datetime] = None
-
-
-# Session management for elderly-friendly interface
-class UserSession(BaseModel):
-    """Schema for user session information."""
-
-    user_id: int
-    username: str
-    full_name: Optional[str] = None
-    is_admin: bool
-    ui_preferences: dict
-    session_start: datetime
-    last_activity: datetime
-
-    @property
-    def session_duration_minutes(self) -> int:
-        """Get session duration in minutes."""
-        if self.last_activity and self.session_start:
-            delta = self.last_activity - self.session_start
-            return int(delta.total_seconds() / 60)
-        return 0

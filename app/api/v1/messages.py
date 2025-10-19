@@ -11,6 +11,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models.message import (
     Message,
     MessageReply,
@@ -27,7 +28,9 @@ router = APIRouter()
 
 
 @router.get("/stats", response_model=MessageStats)
-async def get_message_stats(db: Session = Depends(get_db)):
+async def get_message_stats(
+    db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)
+):
     """Get message statistics for dashboard."""
     try:
         today = datetime.utcnow().date()
@@ -74,6 +77,7 @@ async def get_messages(
     from_date: Optional[str] = Query(None),
     to_date: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Get list of messages with filtering and pagination."""
     try:
@@ -120,7 +124,11 @@ async def get_messages(
 
 
 @router.get("/{message_id}")
-async def get_message(message_id: int, db: Session = Depends(get_db)):
+async def get_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Get single message by ID."""
     try:
         message = db.query(Message).filter(Message.id == message_id).first()
@@ -199,6 +207,7 @@ async def send_message(
     message_data: MessageSend,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Send SMS message to tenants."""
     try:
@@ -270,6 +279,7 @@ async def send_rent_reminders(
     background_tasks: BackgroundTasks,
     test_mode: bool = Query(False),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Send rent reminder messages to unpaid tenants."""
     try:
@@ -303,6 +313,7 @@ async def send_late_fee_notices(
     background_tasks: BackgroundTasks,
     test_mode: bool = Query(False),
     db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Send late fee notices to tenants with overdue rent."""
     try:
@@ -330,7 +341,11 @@ async def send_late_fee_notices(
 
 
 @router.post("/{message_id}/cancel")
-async def cancel_scheduled_message(message_id: int, db: Session = Depends(get_db)):
+async def cancel_scheduled_message(
+    message_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Cancel a scheduled message."""
     try:
         message = db.query(Message).filter(Message.id == message_id).first()
@@ -357,7 +372,7 @@ async def cancel_scheduled_message(message_id: int, db: Session = Depends(get_db
 
 
 @router.get("/templates/list")
-async def get_message_templates():
+async def get_message_templates(current_user: dict = Depends(get_current_user)):
     """Get available message templates."""
     try:
         templates = sms_service.get_available_templates()
@@ -369,7 +384,9 @@ async def get_message_templates():
 
 
 @router.post("/test-sms")
-async def test_sms_api(test_mode: bool = Query(True)):
+async def test_sms_api(
+    test_mode: bool = Query(True), current_user: dict = Depends(get_current_user)
+):
     """Test SMS API key and connection."""
     try:
         result = await sms_service.test_api_key(test_mode)
@@ -381,7 +398,9 @@ async def test_sms_api(test_mode: bool = Query(True)):
 
 
 @router.get("/quota/remaining")
-async def get_sms_quota(test_mode: bool = Query(False)):
+async def get_sms_quota(
+    test_mode: bool = Query(False), current_user: dict = Depends(get_current_user)
+):
     """Get remaining SMS quota."""
     try:
         quota = await sms_service.get_quota_remaining(test_mode)

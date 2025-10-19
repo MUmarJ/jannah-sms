@@ -12,6 +12,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.core.config import settings
 from app.core.database import init_db
@@ -32,6 +35,35 @@ async def lifespan(app: FastAPI):
 
     # Initialize database
     init_db()
+
+    # Check for admin user and create if needed
+    from app.core.database import SessionLocal
+    from app.models.user import UserDB
+
+    db = SessionLocal()
+    try:
+        user_count = db.query(UserDB).count()
+
+        if user_count == 0:
+            print("⚠️  NO USERS FOUND!")
+            if settings.admin_password != "changeme":
+                from app.utils.init_admin import create_admin_user
+
+                create_admin_user(
+                    db,
+                    settings.admin_username,
+                    settings.admin_password,
+                    settings.admin_email,
+                )
+                print("✅ Admin user created from environment variables")
+            else:
+                print("🔧 Set ADMIN_PASSWORD in environment to auto-create admin")
+        else:
+            print(f"👤 Found {user_count} user(s) in database")
+    except Exception as e:
+        print(f"⚠️  Warning: Error checking/creating admin user: {e}")
+    finally:
+        db.close()
 
     # Start scheduler service
     try:
@@ -73,6 +105,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Rate limiting setup
+    limiter = Limiter(key_func=get_remote_address)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     # Security middleware
     if not settings.debug:
         app.add_middleware(
@@ -89,6 +126,20 @@ def create_app() -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    # Security headers middleware
+    @app.middleware("http")
+    async def add_security_headers(request: Request, call_next):
+        """Add security headers to all responses."""
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        if settings.is_production:
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+        return response
 
     # Mount static files
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -134,13 +185,23 @@ def create_app() -> FastAPI:
         }
     )
 
-    # Root route - redirect to dashboard
+    # Root route - check auth and redirect
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     async def root(request: Request):
-        """Root endpoint - redirect to dashboard."""
+        """Root endpoint - check auth and redirect."""
         from fastapi.responses import RedirectResponse
 
-        return RedirectResponse(url="/dashboard", status_code=302)
+        from app.core.security import verify_token
+
+        # Check if user is authenticated
+        session_token = request.cookies.get(settings.session_cookie_name)
+        if session_token:
+            user = verify_token(session_token)
+            if user:
+                return RedirectResponse(url="/dashboard", status_code=302)
+
+        # Not authenticated, redirect to login
+        return RedirectResponse(url="/login", status_code=302)
 
     # Health check endpoint
     @app.get("/health")

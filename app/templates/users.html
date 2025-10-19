@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Users - {{ app_name }}{% endblock %}
+
+{% block page_title %}👤 User Management{% endblock %}
+
+{% block page_description %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <p style="color: #6b7280; font-size: 18px; margin: 0;">
+            Manage user accounts and permissions.
+        </p>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <!-- Quick Stats -->
+    <div class="grid grid-3" style="margin-bottom: 32px;">
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">👥</div>
+            <h3 style="margin: 0; font-size: 24px; color: #2563eb;">{{ stats.total_users or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Total Users</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">✅</div>
+            <h3 style="margin: 0; font-size: 24px; color: #059669;">{{ stats.active_users or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Active</p>
+        </div>
+        <div class="card" style="text-align: center; margin-bottom: 0;">
+            <div style="font-size: 36px; margin-bottom: 8px;">⏰</div>
+            <h3 style="margin: 0; font-size: 24px; color: #d97706;">{{ stats.pending_users or 0 }}</h3>
+            <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 16px;">Pending Approval</p>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    {% if users %}
+        <div class="card">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Login Count</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600; font-size: 18px;">{{ user.username }}</div>
+                                    {% if user.full_name %}
+                                        <div style="color: #6b7280; font-size: 16px;">{{ user.full_name }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span style="font-size: 18px;">{{ user.email }}</span>
+                                </td>
+                                <td>
+                                    {% if user.is_admin %}
+                                        <span class="status-badge" style="background: #dbeafe; color: #1e40af;">
+                                            🔑 Admin
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge" style="background: #f3f4f6; color: #4b5563;">
+                                            👤 User
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="status-badge status-active">
+                                            ✅ Active
+                                        </span>
+                                    {% elif user.pending_approval %}
+                                        <span class="status-badge status-warning">
+                                            ⏰ Pending Approval
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge status-error">
+                                            ❌ Disabled
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.last_login %}
+                                        <span style="font-size: 16px;">{{ user.last_login | format_datetime("%b %d, %Y %I:%M %p") }}</span>
+                                    {% else %}
+                                        <span style="color: #9ca3af;">Never</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span style="font-size: 18px;">{{ user.login_count or 0 }}</span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        {% if not user.is_active and user.pending_approval %}
+                                            <button class="btn btn-success" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="approveUser({{ user.id }}, '{{ user.username }}')">
+                                                ✅ Approve
+                                            </button>
+                                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="rejectUser({{ user.id }}, '{{ user.username }}')">
+                                                ❌ Reject
+                                            </button>
+                                        {% elif user.is_active %}
+                                            <button class="btn btn-warning" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="disableUser({{ user.id }}, '{{ user.username }}')">
+                                                🔒 Disable
+                                            </button>
+                                        {% else %}
+                                            <button class="btn btn-success" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="enableUser({{ user.id }}, '{{ user.username }}')">
+                                                🔓 Enable
+                                            </button>
+                                        {% endif %}
+
+                                        {% if not user.is_admin and user.id != current_user.user_id %}
+                                            {% if user.is_admin %}
+                                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 16px;"
+                                                        onclick="revokeAdmin({{ user.id }}, '{{ user.username }}')">
+                                                    👤 Revoke Admin
+                                                </button>
+                                            {% else %}
+                                                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 16px;"
+                                                        onclick="makeAdmin({{ user.id }}, '{{ user.username }}')">
+                                                    🔑 Make Admin
+                                                </button>
+                                            {% endif %}
+                                        {% endif %}
+
+                                        {% if user.id != current_user.user_id %}
+                                            <button class="btn btn-danger" style="padding: 6px 12px; font-size: 16px;"
+                                                    onclick="deleteUser({{ user.id }}, '{{ user.username }}')">
+                                                🗑️ Delete
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="card" style="text-align: center; padding: 64px;">
+            <div style="font-size: 72px; margin-bottom: 24px;">👥</div>
+            <h2 style="font-size: 28px; margin-bottom: 16px; color: #374151;">No Users Found</h2>
+            <p style="font-size: 18px; margin-bottom: 32px; color: #6b7280;">
+                Users who register will appear here for approval.
+            </p>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Approve user
+async function approveUser(userId, username) {
+    const confirmed = await App.confirm(
+        `Approve user "${username}" and allow them to log in?`,
+        'Approve User'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}/approve`, {
+                method: 'POST'
+            });
+            window.showAlert('User approved successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to approve user', 'danger');
+        }
+    }
+}
+
+// Reject user
+async function rejectUser(userId, username) {
+    const confirmed = await App.confirm(
+        `Reject and delete user "${username}"? This action cannot be undone.`,
+        'Reject User'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}`, {
+                method: 'DELETE'
+            });
+            window.showAlert('User rejected and deleted', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to reject user', 'danger');
+        }
+    }
+}
+
+// Disable user
+async function disableUser(userId, username) {
+    const confirmed = await App.confirm(
+        `Disable user "${username}"? They will not be able to log in until re-enabled.`,
+        'Disable User'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}/disable`, {
+                method: 'POST'
+            });
+            window.showAlert('User disabled successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to disable user', 'danger');
+        }
+    }
+}
+
+// Enable user
+async function enableUser(userId, username) {
+    const confirmed = await App.confirm(
+        `Enable user "${username}"? They will be able to log in again.`,
+        'Enable User'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}/enable`, {
+                method: 'POST'
+            });
+            window.showAlert('User enabled successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to enable user', 'danger');
+        }
+    }
+}
+
+// Make user admin
+async function makeAdmin(userId, username) {
+    const confirmed = await App.confirm(
+        `Grant admin privileges to "${username}"? They will have full system access.`,
+        'Make Admin'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}/make-admin`, {
+                method: 'POST'
+            });
+            window.showAlert('User promoted to admin successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to promote user to admin', 'danger');
+        }
+    }
+}
+
+// Revoke admin
+async function revokeAdmin(userId, username) {
+    const confirmed = await App.confirm(
+        `Revoke admin privileges from "${username}"? They will become a regular user.`,
+        'Revoke Admin'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}/revoke-admin`, {
+                method: 'POST'
+            });
+            window.showAlert('Admin privileges revoked successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to revoke admin privileges', 'danger');
+        }
+    }
+}
+
+// Delete user
+async function deleteUser(userId, username) {
+    const confirmed = await App.confirm(
+        `DELETE user "${username}"? This action cannot be undone.`,
+        'Delete User'
+    );
+
+    if (confirmed) {
+        try {
+            await App.apiCall(`/api/v1/users/${userId}`, {
+                method: 'DELETE'
+            });
+            window.showAlert('User deleted successfully', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (error) {
+            window.showAlert('Failed to delete user', 'danger');
+        }
+    }
+}
+</script>
+{% endblock %}
