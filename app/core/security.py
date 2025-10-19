@@ -4,7 +4,7 @@ Designed to be simple but secure for elderly users.
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
@@ -19,12 +19,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Token authentication
 security = HTTPBearer(auto_error=False)
-
-# Simple admin credentials (in production, use proper user management)
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD_HASH = (
-    "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"  # "secret"
-)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -117,23 +111,6 @@ async def get_current_user(
             )
 
     return user
-
-
-def authenticate_user(username: str, password: str) -> Union[dict, bool]:
-    """
-    Authenticate user with username and password.
-    Returns user dict if successful, False otherwise.
-    """
-    # Simple admin authentication (expand this for multiple users)
-    if username == ADMIN_USERNAME and verify_password(password, ADMIN_PASSWORD_HASH):
-        return {
-            "username": username,
-            "full_name": "Administrator",
-            "email": "admin@jannah-sms.com",
-            "is_admin": True,
-        }
-
-    return False
 
 
 # Dependency for admin-only endpoints
