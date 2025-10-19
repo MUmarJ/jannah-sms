@@ -36,32 +36,60 @@ async def lifespan(app: FastAPI):
     # Initialize database
     init_db()
 
-    # Check for admin user and create if needed
+    # Check for admin user and create/update if needed
     from app.core.database import SessionLocal
+    from app.core.security import get_password_hash, verify_password
     from app.models.user import UserDB
 
     db = SessionLocal()
     try:
-        user_count = db.query(UserDB).count()
+        # Truncate password if needed (bcrypt has 72 byte limit)
+        admin_password = settings.admin_password[:72]
+        if len(settings.admin_password) > 72:
+            print(
+                f"⚠️  Admin password truncated to 72 bytes (bcrypt limit): "
+                f"{len(settings.admin_password)} -> 72"
+            )
 
-        if user_count == 0:
-            print("⚠️  NO USERS FOUND!")
+        # Check if admin user exists
+        admin_user = (
+            db.query(UserDB).filter(UserDB.username == settings.admin_username).first()
+        )
+
+        if admin_user:
+            # Admin exists - check if password needs updating
+            if not verify_password(admin_password, admin_user.hashed_password):
+                print(f"🔄 Updating password for admin user: {settings.admin_username}")
+                admin_user.hashed_password = get_password_hash(admin_password)
+                admin_user.email = settings.admin_email  # Update email too
+                db.commit()
+                print("✅ Admin password updated from environment variables")
+            else:
+                print(f"👤 Admin user verified: {settings.admin_username}")
+        else:
+            # No admin user - create one
+            print("⚠️  NO ADMIN USER FOUND!")
             if settings.admin_password != "changeme":
                 from app.utils.init_admin import create_admin_user
 
                 create_admin_user(
                     db,
                     settings.admin_username,
-                    settings.admin_password,
+                    admin_password,
                     settings.admin_email,
                 )
                 print("✅ Admin user created from environment variables")
             else:
                 print("🔧 Set ADMIN_PASSWORD in environment to auto-create admin")
-        else:
-            print(f"👤 Found {user_count} user(s) in database")
+
+        user_count = db.query(UserDB).count()
+        print(f"👥 Total users in database: {user_count}")
+
     except Exception as e:
         print(f"⚠️  Warning: Error checking/creating admin user: {e}")
+        import traceback
+
+        traceback.print_exc()
     finally:
         db.close()
 
