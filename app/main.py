@@ -158,6 +158,19 @@ def create_app() -> FastAPI:
             allow_headers=["*"],
         )
 
+    # Proxy headers middleware - handle X-Forwarded-* headers from Railway/reverse proxy
+    @app.middleware("http")
+    async def handle_proxy_headers(request: Request, call_next):
+        """Handle X-Forwarded-Proto and other proxy headers for correct URL generation."""
+        # Check if request came through HTTPS proxy (Railway, nginx, etc.)
+        forwarded_proto = request.headers.get("X-Forwarded-Proto")
+        if forwarded_proto == "https":
+            # Override the request scheme to https for url_for() to work correctly
+            request.scope["scheme"] = "https"
+
+        response = await call_next(request)
+        return response
+
     # Security headers middleware
     @app.middleware("http")
     async def add_security_headers(request: Request, call_next):
