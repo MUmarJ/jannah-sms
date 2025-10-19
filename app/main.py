@@ -43,12 +43,15 @@ async def lifespan(app: FastAPI):
 
     db = SessionLocal()
     try:
-        # Truncate password if needed (bcrypt has 72 byte limit)
-        admin_password = settings.admin_password[:72]
-        if len(settings.admin_password) > 72:
+        # Truncate password to 72 bytes (bcrypt limit)
+        # Must truncate by bytes, not characters (UTF-8 chars can be multi-byte)
+        password_bytes = settings.admin_password.encode('utf-8')[:72]
+        admin_password = password_bytes.decode('utf-8', errors='ignore')
+
+        if len(settings.admin_password.encode('utf-8')) > 72:
             print(
                 f"⚠️  Admin password truncated to 72 bytes (bcrypt limit): "
-                f"{len(settings.admin_password)} -> 72"
+                f"{len(settings.admin_password.encode('utf-8'))} bytes -> 72 bytes"
             )
 
         # Check if admin user exists

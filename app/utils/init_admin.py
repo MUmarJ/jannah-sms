@@ -41,7 +41,9 @@ def create_admin_user(
         return existing
 
     # Truncate password to 72 bytes (bcrypt limit)
-    password = password[:72]
+    # Must truncate by bytes, not characters (UTF-8 chars can be multi-byte)
+    password_bytes = password.encode('utf-8')[:72]
+    password = password_bytes.decode('utf-8', errors='ignore')
 
     # Create new admin user
     admin = UserDB(
